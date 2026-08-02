@@ -252,8 +252,8 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;mi
 
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-<aside class="sidebar closed" id="sidebar">
-  <div class="sb-brand">ConF I.A.<small>Bibi & Netog v18</small></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-brand">ConF I.A.<small>Bibi &amp; Netog v19</small></div>
   <button class="sb-item on" onclick="go('dashboard')"><span class="sb-ico">📊</span> Dashboard</button>
   <div class="sb-section">Financeiro</div>
   <button class="sb-item" onclick="go('lancamentos')"><span class="sb-ico">📋</span> Lançamentos</button>
@@ -263,7 +263,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;mi
   <button class="sb-item" onclick="go('categorias')"><span class="sb-ico">🏷️</span> Categorias</button>
   <button class="sb-item" onclick="go('ativos')"><span class="sb-ico">💎</span> Ativos</button>
   <div class="sb-section">Sistema</div>
-  <button class="sb-item" onclick="go('importar')"><span class="sb-ico">📥</span> Importar</button>
+  <button class="sb-item" onclick="go('agente')"><span class="sb-ico">🤖</span> Do Agente</button>
   <button class="sb-item" onclick="go('config')"><span class="sb-ico">⚙️</span> Configuração</button>
 </aside>
 
@@ -345,55 +345,24 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;mi
       <div id="ativoList"></div>
     </div>
 
-    <!-- IMPORTAR -->
-    <div class="page" id="pg-importar">
-      <div class="sec"><div class="sec-title">📥 Importar Extrato / Fatura</div></div>
-      <!-- Step 1: Upload -->
-      <div id="imp-upload" class="card" style="text-align:center;padding:24px">
-        <div style="font-size:32px;margin-bottom:8px">📂</div>
-        <div style="font:500 13px var(--f);color:var(--tx2);margin-bottom:12px">Suba um arquivo OFX ou CSV</div>
-        <input type="file" id="imp-file" accept=".ofx,.csv,.xlsx,.xls" onchange="impLoad()" style="display:none">
-        <button class="btn" onclick="document.getElementById('imp-file').click()">Escolher arquivo</button>
-        <div style="font:300 10px var(--fm);color:var(--tx3);margin-top:8px" id="imp-file-info"></div>
+    <!-- DO AGENTE (A5) -->
+    <div class="page" id="pg-agente">
+      <div class="sec"><div class="sec-title">🤖 Criados pelo Agente</div></div>
+      <div class="card" style="padding:12px;margin-bottom:10px;font:400 11px var(--f);color:var(--tx3);line-height:1.6">
+        A ingestão de extratos, faturas e notas é feita pelo Claude Project a partir da pasta
+        <strong style="color:var(--gold)">ConFIA-Inbox</strong> do seu Drive.
+        Aqui você audita o que ele criou: edite uma linha para ensiná-lo — a correção entra
+        na fila <em>feedback</em> e ele aprende na próxima sessão.
       </div>
-      <!-- Step 2: Conta -->
-      <div id="imp-conta" style="display:none">
-        <div class="card" style="padding:12px">
-          <div id="imp-header-info" style="font:400 11px var(--f);color:var(--tx3);margin-bottom:8px"></div>
-          <div class="fg"><label class="fl">Conta de origem do extrato</label>
-            <select class="fs" id="imp-conta-sel"></select>
-          </div>
-          <div id="imp-conta-warn" style="font:400 10px var(--f);color:var(--amber);margin-top:4px"></div>
-          <button class="btn" onclick="impClassificar()" style="margin-top:8px">Classificar</button>
-          <button class="btn2" onclick="impReset()" style="margin-top:8px;margin-left:6px">← Trocar arquivo</button>
-        </div>
+      <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+        <button class="pill on" id="agf7" onclick="setAgenteP(7)">7 dias</button>
+        <button class="pill" id="agf30" onclick="setAgenteP(30)">30 dias</button>
+        <button class="pill" id="agf0" onclick="setAgenteP(0)">Tudo</button>
+        <span style="margin-left:auto;font:400 11px var(--fm);color:var(--tx3)" id="agenteCount"></span>
       </div>
-      <!-- Step 3: Preview -->
-      <div id="imp-preview" style="display:none">
-        <div class="card" style="padding:12px;margin-bottom:8px">
-          <div id="imp-banner" style="font:500 12px var(--f);color:var(--gold);margin-bottom:8px"></div>
-          <div style="display:flex;gap:4px;align-items:center;margin-bottom:6px">
-            <div style="flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden"><div id="imp-progress" style="height:100%;background:var(--green);width:0%;transition:width .3s"></div></div>
-            <span id="imp-prog-text" style="font:500 10px var(--fm);color:var(--tx3);min-width:40px;text-align:right"></span>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <span id="imp-stats" style="font:500 10px var(--fm);color:var(--tx2)"></span>
-            <span style="flex:1"></span>
-            <button class="pill on" id="imp-fAll" onclick="impFilter('all')">Todos</button>
-            <button class="pill" id="imp-fRed" onclick="impFilter('red')">🔴</button>
-            <button class="pill" id="imp-fYel" onclick="impFilter('yellow')">🟡</button>
-            <button class="pill" id="imp-fGreen" onclick="impFilter('green')">🟢</button>
-            <button class="pill" id="imp-fDup" onclick="impFilter('dup')">Dup?</button>
-            <button class="pill" id="imp-fSaved" onclick="impFilter('saved')">✅</button>
-          </div>
-        </div>
-        <div id="imp-list" style="max-height:60vh;overflow-y:auto"></div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn2" onclick="impReset()">← Novo arquivo</button>
-        </div>
-      </div>
+      <button class="btn2 sm" onclick="verificarPendentesAgora()" style="margin-bottom:10px">🔄 Verificar agora (sem esperar os 10 min)</button>
+      <div id="agenteList"></div>
     </div>
-
     <!-- CONFIG -->
     <div class="page" id="pg-config">
       <div class="sec"><div class="sec-title">Configuração</div></div>
@@ -565,7 +534,7 @@ let API_KEY=localStorage.getItem('confia-apiKey')||_DEFAULTS.apiKey;
 
 const S = {
   config:{}, categorias:[], contas:[], ativos:[], orcamentos:[], lancamentos:[],
-  classificador:[], icones:{},
+  classificador:[], icones:{}, feedback:[],
   regras:{}, campos:{}, transicoes:{}, acoes:{}, matriz:{},
   validacoes:[], regras_op:[], dicionario:[],
   gasUrl:'', alerts:[],
@@ -684,12 +653,25 @@ async function syncAll(){
     if(!orc||orc.length<=1)orc=await sheetRead('orcamentos');
     if(orc&&orc.length>1)S.orcamentos=orc.slice(1).map(r=>({tipo:String(r[0]||''),classe:String(r[1]||''),categoria:String(r[2]||''),subcategoria:String(r[3]||''),dt:compDate(r[4]),valor:parseNum(r[5])})).filter(o=>o.subcategoria&&o.dt);
 
-    // Lançamentos (31 colunas)
+    // Lançamentos (34 colunas reais: 0-29 = schema base, 30-31 = "IMPORTAÇÃO
+    // CONFIANTE?"/"REVISADO?" — não lidas aqui, sem uso no app hoje —,
+    // 32-33 = confianca/doc_origem, localizadas por HEADER, não por índice fixo)
     const lanc=await sheetRead('Lancamentos');
-    if(lanc&&lanc.length>1)S.lancamentos=lanc.slice(1).map(r=>{
-      if(!r||r.length<5||!r[0])return null;
-      return{id:String(r[0]||''),id_grupo:String(r[1]||''),dt_transacao:parseDate(r[2]),dt_competencia:compDate(r[3]),dt_liquidacao:parseDate(r[4]),tipo:String(r[5]||'').toLowerCase(),classe:String(r[6]||''),categoria:String(r[7]||''),subcategoria:String(r[8]||''),moeda:String(r[9]||'BRL'),forma:String(r[10]||'').toLowerCase(),valor_total:parseNum(r[11]),valor:parseNum(r[12]),parcelas:parseInt(r[13])||1,num_parcela:parseInt(r[14])||1,conta_origem:String(r[15]||''),conta_destino:String(r[16]||''),nome_ativo:String(r[17]||''),cartao:String(r[18]||''),fatura_ref:String(r[19]||''),reembolsavel:String(r[20]||''),tipo_reembolso:String(r[21]||''),status_reembolso:String(r[22]||''),favorecido:String(r[23]||''),descricao:String(r[24]||''),desc_importada:String(r[25]||''),status:String(r[26]||'').toLowerCase(),origem:String(r[28]||''),fechado:String(r[29]||'')};
-    }).filter(Boolean).filter(t=>t.id&&t.valor);
+    if(lanc&&lanc.length>1){
+      // Descobrir por HEADER onde estão as colunas aditivas (robusto se a ordem mudar)
+      const lh=(lanc[0]||[]).map(h=>String(h||'').toLowerCase().trim());
+      const iConf=lh.indexOf('confianca')>=0?lh.indexOf('confianca'):lh.indexOf('confiança');
+      const iDoc=lh.indexOf('doc_origem');
+      S.lancamentos=lanc.slice(1).map(r=>{
+        if(!r||r.length<5||!r[0])return null;
+        return{id:String(r[0]||''),id_grupo:String(r[1]||''),dt_transacao:parseDate(r[2]),dt_competencia:compDate(r[3]),dt_liquidacao:parseDate(r[4]),tipo:String(r[5]||'').toLowerCase(),classe:String(r[6]||''),categoria:String(r[7]||''),subcategoria:String(r[8]||''),moeda:String(r[9]||'BRL'),forma:String(r[10]||'').toLowerCase(),valor_total:parseNum(r[11]),valor:parseNum(r[12]),parcelas:parseInt(r[13])||1,num_parcela:parseInt(r[14])||1,conta_origem:String(r[15]||''),conta_destino:String(r[16]||''),nome_ativo:String(r[17]||''),cartao:String(r[18]||''),fatura_ref:String(r[19]||''),reembolsavel:String(r[20]||''),tipo_reembolso:String(r[21]||''),status_reembolso:String(r[22]||''),favorecido:String(r[23]||''),descricao:String(r[24]||''),desc_importada:String(r[25]||''),status:String(r[26]||'').toLowerCase(),origem:String(r[28]||''),fechado:String(r[29]||''),confianca:iConf>=0?String(r[iConf]||''):'',doc_origem:iDoc>=0?String(r[iDoc]||''):''};
+      }).filter(Boolean).filter(t=>t.id&&t.valor);
+    }
+
+    // Feedback (A2/A3 — fila de ensino do agente; aba pode não existir ainda)
+    const fbk=await sheetRead('feedback');
+    if(fbk&&fbk.length>1)S.feedback=fbk.slice(1).map(r=>({id:String(r[0]||''),criado_em:String(r[1]||''),autor:String(r[2]||''),id_lancamento:String(r[3]||''),tipo:String(r[4]||''),de:String(r[5]||''),para:String(r[6]||''),status:String(r[7]||''),processado_em:String(r[8]||'')})).filter(f=>f.id);
+    else S.feedback=[];
 
     // Classificador
     const clf=await sheetRead('classificador');
@@ -771,7 +753,7 @@ function go(page){
   document.getElementById('pg-'+page)?.classList.add('on');
   document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.sb-item').forEach(b=>{if(b.textContent.trim().toLowerCase().includes(page.substring(0,4)))b.classList.add('on');});
-  const titles={dashboard:'Dashboard',lancamentos:'Lançamentos',orcamento:'Orçamento',contas:'Contas',categorias:'Categorias',ativos:'Ativos',importar:'Importar',config:'Configuração'};
+  const titles={dashboard:'Dashboard',lancamentos:'Lançamentos',orcamento:'Orçamento',contas:'Contas',categorias:'Categorias',ativos:'Ativos',agente:'Do Agente',config:'Configuração'};
   document.getElementById('topTitle').textContent=titles[page]||page;
   if(window.innerWidth<768){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('on');}
   renderCurrent();
@@ -781,7 +763,7 @@ function toggleMoeda(){S.moeda=S.moeda==='BRL'?'USD':'BRL';document.getElementBy
 function togglePeriodo(){S.periodo=S.periodo==='mensal'?'acumulado':'mensal';document.getElementById('pillPeriodo').textContent=S.periodo==='mensal'?'Mensal':'Acumulado';renderCurrent();}
 
 function renderCurrent(){
-  const r={dashboard:renderDashboard,lancamentos:renderLancamentos,orcamento:renderOrcamento,contas:renderContas,categorias:renderCategorias,ativos:renderAtivos,importar:renderImportar,config:renderConfig};
+  const r={dashboard:renderDashboard,lancamentos:renderLancamentos,orcamento:renderOrcamento,contas:renderContas,categorias:renderCategorias,ativos:renderAtivos,agente:renderAgente,config:renderConfig};
   (r[S.page]||renderDashboard)();
 }
 
@@ -789,6 +771,15 @@ function renderCurrent(){
 // HELPERS
 // ═══════════════════════════════════════════
 function getIco(classe){return S.icones[classe]||'📌';}
+// A9 — emoji do tipo de fluxo, tolerante a singular/plural e acento
+function icoDoTipo(tipo){
+  const t=lc(tipo);
+  if(t.includes('entrada'))return '💰';
+  if(t.includes('saída')||t.includes('saida'))return '💸';
+  if(t.includes('transfer'))return '🔄';
+  if(t.includes('patrimon'))return '💎';
+  return '📌';
+}
 function getCatIco(categoria){const c=S.categorias.find(x=>x.categoria===categoria&&x.icone_categoria);return c?.icone_categoria||'';}
 function conv(val,moedaOrigem){
   if(!val)return 0;
@@ -938,8 +929,16 @@ function renderLancamentos(){
 
     items.forEach(t=>{
       const sign=lc(t.tipo).includes('entrada');
-      const icoTipo={saida:'🔴',entrada:'🟢',transferencia:'🔄',patrimonial:'💎'}[t.tipo]||'📌';
-      const statusCls={liquidado:'green',previsto:'blue',pendente:'gold',cancelado:'gray',estornado:'red'}[t.status]||'gray';
+      // A9: emojis de tipo hardcoded e casados com os do formulário (TIPO_META).
+      // FIX: o mapa antigo comparava chave exata ('saida') com o valor da planilha
+      // ('Saídas'), então quase toda linha caía no fallback 📌.
+      const icoTipo=icoDoTipo(t.tipo);
+      // A7: o "sinalzinho" colorido de status saiu da lista (status é intrínseco).
+      // Só o que exige AÇÃO continua visível: pendente/previsto (a liquidar) e
+      // cancelado/estornado (fora do fluxo). Liquidado = normal, sem selo.
+      const st=lc(t.status);
+      const selo=(st==='pendente'||st==='previsto')?`<span class="tag gold" style="font-size:8px">a liquidar</span>`
+        :(st==='cancelado'||st==='estornado')?`<span class="tag gray" style="font-size:8px">${t.status}</span>`:'';
       h+=`<div onclick="openLancDetail('${t.id}')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--bdr);transition:background .1s" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
         <span style="font-size:12px">${icoTipo}</span>
         <div style="flex:1;min-width:0">
@@ -951,7 +950,7 @@ function renderLancamentos(){
         </div>
         <div style="text-align:right">
           <div style="font:600 12px var(--fm);color:var(${sign?'--green':'--red'})">${sign?'+':'−'}${R(Math.abs(t.valor))}</div>
-          <span class="tag ${statusCls}" style="font-size:8px">${t.status||'—'}</span>
+          ${selo}${badgeConfianca(t)}
         </div>
       </div>`;
     });
@@ -1015,18 +1014,30 @@ function renderLancDetail(t){
 
   // ── MODO VISUALIZAÇÃO ──
   const fields=[
-    ['ID',t.id],['Status',t.status],['Tipo',t.tipo],
+    ['ID',t.id],['Status',t.status],['Tipo',`${icoDoTipo(t.tipo)} ${t.tipo}`],
     ['Data transação',dfmt(t.dt_transacao)],['Competência',t.dt_competencia],['Liquidação',t.dt_liquidacao?dfmt(t.dt_liquidacao):'—'],
-    ['Classe',`${getIco(t.classe)} ${t.classe}`],['Categoria',t.categoria],['Subcategoria',t.subcategoria],
+    // A8 — emojis de classe e categoria em toda exibição
+    ['Classe',`${getIco(t.classe)} ${t.classe}`],['Categoria',`${getCatIco(t.categoria)} ${t.categoria}`],['Subcategoria',`${getCatIco(t.categoria)} ${t.subcategoria}`],
     ['Valor',R(t.valor)],['Moeda',t.moeda],['Forma',t.forma],
     ['Conta origem',t.conta_origem],['Conta destino',t.conta_destino||'—'],
     ['Cartão',t.cartao||'—'],['Fatura ref',t.fatura_ref||'—'],
     ['Parcelas',t.parcelas>1?`${t.num_parcela}/${t.parcelas}`:'—'],
     ['Descrição',t.descricao||'—'],['Favorecido',t.favorecido||'—'],
     ['Desc. importada',t.desc_importada||'—'],
-    ['Reembolsável',t.reembolsavel||'—'],['Origem',t.origem||'—'],['Fechado',t.fechado||'—']
+    ['Reembolsável',t.reembolsavel||'—'],['Origem',t.origem||'—'],['Fechado',t.fechado||'—'],
+    ['Documento de origem',t.doc_origem||'—']
   ];
-  let h=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">`;
+  let h='';
+  // A4 — faixa de confiança quando a linha veio do agente
+  if(ehDoAgente(t)){
+    const c=lc(t.confianca);
+    const cor=c==='baixa'?'--a-bg':c==='total'?'--g-bg':'--b-bg';
+    const bd=c==='baixa'?'--a-bd':c==='total'?'--g-bd':'--b-bd';
+    h+=`<div style="background:var(${cor});border:1px solid var(${bd});border-radius:var(--r2);padding:8px 10px;margin-bottom:10px;font:400 11px var(--f);color:var(--tx2);display:flex;align-items:center;gap:8px">
+      <span>🤖</span><span style="flex:1">Criado pelo agente ${badgeConfianca(t)}${c==='baixa'?' — confira contra o documento antes de confiar':''}</span>
+    </div>`;
+  }
+  h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">`;
   fields.forEach(([label,val])=>{
     if(val&&val!=='—')h+=`<div style="padding:6px 0;border-bottom:1px solid var(--bdr)"><div style="font:600 9px var(--f);color:var(--tx3);text-transform:uppercase;letter-spacing:.04em">${label}</div><div style="font-size:12px;color:var(--tx2);margin-top:2px">${val}</div></div>`;
   });
@@ -1038,7 +1049,20 @@ function renderLancDetail(t){
   if(lc(t.status)==='pendente')h+=`<button class="btn sm" onclick="mudarStatusLanc('liquidado')">✓ Liquidar</button><button class="btn2 sm" onclick="mudarStatusLanc('cancelado')">✗ Cancelar</button>`;
   if(lc(t.status)==='previsto')h+=`<button class="btn sm" onclick="mudarStatusLanc('liquidado')">✓ Liquidar</button><button class="btn2 sm" onclick="mudarStatusLanc('pendente')">⏳ Pendente</button><button class="btn2 sm" onclick="mudarStatusLanc('cancelado')">✗ Cancelar</button>`;
   if(lc(t.status)==='liquidado')h+=`<button class="btn2 sm" onclick="mudarStatusLanc('estornado')" style="color:var(--red)">↩ Estornar</button>`;
+  // A3 — sinalizar fusão errada (só faz sentido em linha do agente)
+  if(ehDoAgente(t))h+=`<button class="btn2 sm" onclick="marcarFusaoErrada()" style="color:var(--amber)">🔀 Fusão errada</button>`;
   h+=`</div>`;
+  // Histórico de feedback já enviado sobre esta linha
+  const fbs=(S.feedback||[]).filter(f=>f.id_lancamento===t.id);
+  if(fbs.length){
+    h+=`<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--bdr)">
+      <div style="font:600 9px var(--f);color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Ensinado ao agente (${fbs.length})</div>`;
+    fbs.slice(-5).forEach(f=>{
+      const pend=lc(f.status)!=='processado';
+      h+=`<div style="font:400 10px var(--f);color:var(--tx3);padding:3px 0">${pend?'⏳':'✓'} ${f.tipo}: ${f.de} → <span style="color:var(--tx2)">${f.para}</span></div>`;
+    });
+    h+=`</div>`;
+  }
   document.getElementById('lancDetailBody').innerHTML=h;
 }
 
@@ -1059,7 +1083,8 @@ function leUpdSubs(selSub){
   const cat=document.getElementById('le-cat')?.value||'';
   const subs=S.categorias.filter(c=>c.tipo===tipo&&c.classe===classe&&c.categoria===cat&&c.atual);
   const el=document.getElementById('le-sub');
-  if(el)el.innerHTML=subs.map(c=>`<option value="${c.subcategoria}" ${c.subcategoria===selSub?'selected':''}>${c.subcategoria}</option>`).join('');
+  // A8: subcategoria com emoji também no modo edição
+  if(el)el.innerHTML=subs.map(c=>`<option value="${c.subcategoria}" ${c.subcategoria===selSub?'selected':''}>${c.icone_categoria||getCatIco(c.categoria)||''} ${c.subcategoria}</option>`).join('');
 }
 
 async function salvarEditLanc(){
@@ -1069,6 +1094,9 @@ async function salvarEditLanc(){
   const novoStatus=g('status');
   const dt=g('dt');
   const val=parseFloat(g('val'))||t.valor;
+
+  // A2 — foto do ANTES para comparar e ensinar o agente
+  const antes={...t};
 
   // Atualizar local
   t.dt_transacao=dt;t.dt_competencia=dt.substring(0,7);
@@ -1085,9 +1113,11 @@ async function salvarEditLanc(){
     const row=[t.id,t.id_grupo||'',t.dt_transacao,t.dt_competencia+'-01',t.dt_liquidacao||'',t.tipo,t.classe,t.categoria,t.subcategoria,t.moeda||'BRL',t.forma,t.valor_total||t.valor,t.valor,t.parcelas||'',t.num_parcela||'',t.conta_origem,t.conta_destino||'',t.nome_ativo||'',t.cartao||'',t.fatura_ref||'',dicVal('reembolsavel',t.reembolsavel)||'',t.tipo_reembolso||'',dicVal('status_reembolso',t.status_reembolso)||'',t.favorecido||'',t.descricao||'',t.desc_importada||'',dicVal('status',t.status)||t.status,dicVal('status_conciliacao','Pendente')||'Pendente',dicVal('origem_lancamento',t.origem)||t.origem||'',dicVal('fechado',t.fechado)||'Não'];
     await gasPost({action:'updateRow',tab:'Lancamentos',id:t.id,values:row});
   }
+  // A2 — se a linha era do agente, cada campo alterado entra na fila feedback
+  await gravarFeedbackDiff(antes,t);
   _lancEditMode=false;
   closeM('ov-lanc-detail');
-  renderLancamentos();
+  renderCurrent();
   toast('ok','✓ lançamento atualizado');
 }
 
@@ -2255,7 +2285,9 @@ function nlSelecionarCenario(){
     reembolsavel:`<div class="fg"><label class="fl">${fl('Reembolsável','reembolsavel',false)}</label><select class="fs" id="nl-reembolsavel"><option value="Não">Não</option><option value="Sim">Sim</option></select></div>`,
     tipo_reembolso:`<div class="fg"><label class="fl">${fl('Tipo Reembolso','tipo_reembolso',false)}</label><select class="fs" id="nl-tipo_reembolso"><option value="">—</option><option value="Plano de saúde">Plano de saúde</option><option value="Empresa">Empresa</option><option value="Terceiro">Terceiro</option><option value="Divisão casal">Divisão casal</option></select></div>`,
     status_reembolso:`<div class="fg"><label class="fl">${fl('Status Reembolso','status_reembolso',false)}</label><select class="fs" id="nl-status_reembolso"><option value="Aguardando">Aguardando</option><option value="Solicitado">Solicitado</option></select></div>`,
-    status:`<div class="fg"><label class="fl">${fl('Status','status',false)}</label><select class="fs" id="nl-status" ${r.campos_visiveis.includes('reembolsavel')?'':'disabled style="opacity:.6"'}>${r.campos_visiveis.includes('reembolsavel')?'<option value="'+statusDisplay+'">'+statusDisplay+'</option>'+(lc(statusDisplay)!=='pendente'?'<option value="Pendente">Pendente</option>':'')+(lc(statusDisplay)!=='liquidado'?'<option value="Liquidado">Liquidado</option>':''):'<option value="'+statusDisplay+'">'+statusDisplay+'</option>'}</select></div>`,
+    // A10 FIX: status sempre escolhível entre Liquidado e Pendente (antes só
+    // destravava em cenário com reembolso; o padrão da regra segue pré-selecionado)
+    status:`<div class="fg"><label class="fl">${fl('Status','status',false)}</label><select class="fs" id="nl-status">${['Liquidado','Pendente'].concat(lc(statusDisplay)!=='liquidado'&&lc(statusDisplay)!=='pendente'?[statusDisplay]:[]).map(s=>`<option value="${s}" ${lc(s)===lc(statusDisplay)?'selected':''}>${s}</option>`).join('')}</select></div>`,
     dt_liquidacao:`<div class="fg"><label class="fl">${fl('Liquidação','dt_liquidacao',false)}</label><input type="date" class="fi" id="nl-dt_liquidacao" value="${lc(r.status_inicial)==='liquidado'?dtHoje:''}"></div>`,
     observacoes:`<div class="fg"><label class="fl">${fl('Observações','observacoes',false)}</label><input type="text" class="fi" id="nl-observacoes" placeholder="Opcional"></div>`,
     id_grupo:`<div class="fg"><label class="fl">${fl('Vincular a lançamento','id_grupo',true)}</label><select class="fs" id="nl-id_grupo" onchange="nlOnGrupoSelect()"><option value="">Selecione…</option>${S.lancamentos.filter(t=>lc(t.reembolsavel)==='sim'&&(!t.status_reembolso||lc(t.status_reembolso)==='aguardando')).map(t=>`<option value="${t.id_grupo||t.id}" data-id="${t.id}">${dfmt(t.dt_transacao)} · ${R(t.valor)} · ${t.subcategoria} · ${t.favorecido||t.descricao||'—'}</option>`).join('')}</select></div>`,
@@ -2352,7 +2384,8 @@ function nlUpdSubs(){
   const classe=document.getElementById('nl-classe')?.value||'';
   const cat=document.getElementById('nl-categoria')?.value||'';
   const subs=S.categorias.filter(c=>c.tipo===tipo&&c.classe===classe&&c.categoria===cat&&c.atual);
-  el.innerHTML=subs.map(c=>`<option value="${c.subcategoria}">${c.subcategoria}</option>`).join('');
+  // A8: subcategoria herda o emoji da categoria (classe e categoria já exibiam)
+  el.innerHTML=subs.map(c=>`<option value="${c.subcategoria}">${c.icone_categoria||getCatIco(c.categoria)||''} ${c.subcategoria}</option>`).join('');
 }
 
 async function salvarLanc(){
@@ -2386,7 +2419,9 @@ async function salvarLanc(){
   } else {
     val=parseFloat(get('valor'))||0;
     valorTotal=val;
-    qtdParcelas=parseInt(get('qtd_parcelas'))||1;
+    // A11 FIX: não inventar 1 parcela. Sem parcelamento, o campo vai VAZIO
+    // (era `||1`, que preenchia 1/1 em entrada simples contra as regras_operacionais)
+    qtdParcelas=parseInt(get('qtd_parcelas'))||'';
   }
   if(val<=0){alert('Valor deve ser maior que zero.');return;}
 
@@ -2427,7 +2462,7 @@ async function salvarLanc(){
 
   // NORMAL: 1 linha
   const id='L'+Date.now();
-  const row=[id,idGrupo,dt,comp,dtLiq,r.tipo_fluxo,get('classe'),get('categoria'),get('subcategoria'),get('moeda_transacao')||'BRL',formaOriginal,valorTotal,val,qtdParcelas,1,get('conta_origem'),get('conta_destino'),get('nome_ativo'),get('cartao'),get('fatura_ref'),reembVal,tipoReemb,statusReemb,get('favorecido'),get('descricao_usuario'),'',statusGravar,dicVal('status_conciliacao','Pendente')||'Pendente',origemGravar,fechadoGravar];
+  const row=[id,idGrupo,dt,comp,dtLiq,r.tipo_fluxo,get('classe'),get('categoria'),get('subcategoria'),get('moeda_transacao')||'BRL',formaOriginal,valorTotal,val,qtdParcelas,(qtdParcelas?1:''),get('conta_origem'),get('conta_destino'),get('nome_ativo'),get('cartao'),get('fatura_ref'),reembVal,tipoReemb,statusReemb,get('favorecido'),get('descricao_usuario'),'',statusGravar,dicVal('status_conciliacao','Pendente')||'Pendente',origemGravar,fechadoGravar];
 
   const ok=await sheetAppend('Lancamentos',[row]);
   if(ok){
@@ -2567,342 +2602,144 @@ async function salvarCat(){
 }
 
 // ═══════════════════════════════════════════
-// IMPORTAR EXTRATO / FATURA
+// A1 — bloco IMPORTAR REMOVIDO na v19 (Req 8.5)
+// A ingestão de extratos/faturas/notas é feita pelo Claude Project a partir
+// da pasta ConFIA-Inbox do Drive. O app só faz lançamento manual e auditoria.
 // ═══════════════════════════════════════════
-let _impData=[];let _impResults=[];let _impFilter='all';let _impConta='';let _impMeta={};
-function renderImportar(){}
-function impReset(){_impData=[];_impResults=[];_impFilter='all';_impMeta={};document.getElementById('imp-upload').style.display='';document.getElementById('imp-conta').style.display='none';document.getElementById('imp-preview').style.display='none';document.getElementById('imp-file').value='';document.getElementById('imp-file-info').textContent='';}
 
-async function impLoad(){
-  const file=document.getElementById('imp-file').files[0];if(!file)return;
-  document.getElementById('imp-file-info').textContent=`${file.name} (${(file.size/1024).toFixed(0)} KB)`;
-  const text=await file.text();const name=file.name.toLowerCase();
-  if(name.endsWith('.ofx'))_impData=impParseOFX(text);
-  else if(name.endsWith('.csv'))_impData=impParseCSV(text);
-  else{toast('err','Use OFX ou CSV');return;}
-  if(!_impData.length){toast('err','Nenhuma transação');return;}
-  // Detect period
-  const dates=_impData.map(t=>t.date).filter(Boolean).sort();
-  _impMeta.dtMin=dates[0]||'';_impMeta.dtMax=dates[dates.length-1]||'';
-  _impMeta.fileName=file.name;
-  toast('ok',`✓ ${_impData.length} transações lidas`);
-  // Show header info
-  document.getElementById('imp-header-info').innerHTML=`📄 <strong>${file.name}</strong> · ${_impData.length} transações · ${impFmtDate(_impMeta.dtMin)} a ${impFmtDate(_impMeta.dtMax)}`;
-  // Populate conta selector
-  const el=document.getElementById('imp-conta-sel');
-  el.innerHTML=S.contas.filter(c=>c.atual).map(c=>`<option value="${c.nome}">${c.icone} ${c.nome} (${c.dono})</option>`).join('');
-  // Auto-detect conta from OFX bank info
-  if(_impMeta.bankName){
-    const match=S.contas.find(c=>c.atual&&(c.apelido||'').toLowerCase().includes(_impMeta.bankName.toLowerCase()));
-    if(match)el.value=match.nome;
+// ═══════════════════════════════════════════
+// A2/A3 — FILA DE FEEDBACK (ensinar o agente)
+// Toda correção numa linha criada pelo agente vira registro na aba feedback.
+// ═══════════════════════════════════════════
+function ehDoAgente(t){
+  if(!t)return false;
+  const o=lc(t.origem);
+  return o.includes('import')||o.includes('agente')||o.includes('claude');
+}
+function autorAtual(){return localStorage.getItem('confia-autor')||'Neto';}
+
+async function gravarFeedback(idLanc,tipo,de,para){
+  if(!S.gasUrl)return false;
+  const agora=new Date();
+  const ts=`${agora.getFullYear()}-${Z(agora.getMonth()+1)}-${Z(agora.getDate())} ${Z(agora.getHours())}:${Z(agora.getMinutes())}`;
+  const row=['F'+Date.now(),ts,autorAtual(),idLanc,tipo,String(de||''),String(para||''),'Pendente',''];
+  const r=await gasPost({action:'append',tab:'feedback',rows:[row]});
+  return !!(r&&r.ok);
+}
+
+// Compara o lançamento antes/depois e grava um feedback por campo alterado
+async function gravarFeedbackDiff(antes,depois){
+  if(!ehDoAgente(antes))return 0;
+  const campos=[['classe','Classe'],['categoria','Categoria'],['subcategoria','Subcategoria'],
+    ['valor','Valor'],['dt_transacao','Data'],['conta_origem','Conta origem'],
+    ['conta_destino','Conta destino'],['forma','Forma'],['favorecido','Favorecido'],
+    ['descricao','Descrição'],['status','Status']];
+  let n=0;
+  for(const [k,label] of campos){
+    if(String(antes[k]||'')!==String(depois[k]||'')){
+      const ok=await gravarFeedback(antes.id,'Correcao',`${label}: ${antes[k]||'—'}`,`${label}: ${depois[k]||'—'}`);
+      if(ok)n++;
+    }
   }
-  el.onchange=impCheckConta;
-  document.getElementById('imp-upload').style.display='none';document.getElementById('imp-conta').style.display='';
-  impCheckConta();
+  if(n)toast('ok',`✓ ${n} correção(ões) na fila de aprendizado`);
+  return n;
 }
 
-function impCheckConta(){
-  const sel=document.getElementById('imp-conta-sel').value;
-  const warn=document.getElementById('imp-conta-warn');
-  // Check if selected account makes sense with file content
-  const hasNubank=_impMeta.fileName?.toLowerCase().includes('nubank')||_impData.some(t=>t.memo.toLowerCase().includes('nubank'));
-  const hasXP=_impMeta.fileName?.toLowerCase().includes('xp')||_impData.some(t=>t.memo.toLowerCase().includes('xp'));
-  const hasItau=_impMeta.fileName?.toLowerCase().includes('itau')||_impData.some(t=>t.memo.toLowerCase().includes('itaú'));
-  const hasSantander=_impMeta.fileName?.toLowerCase().includes('santander');
-  const selLc=sel.toLowerCase();
-  if((hasNubank&&!selLc.includes('nubank'))||(hasXP&&!selLc.includes('xp'))||(hasItau&&!selLc.includes('ita'))||(hasSantander&&!selLc.includes('santander'))){
-    warn.textContent='⚠️ A conta selecionada pode não corresponder ao arquivo. Verifique.';
-  } else {warn.textContent='';}
+async function marcarFusaoErrada(){
+  const t=S.lancamentos.find(x=>x.id===_detailLancId);
+  if(!t)return;
+  if(!confirm(`Marcar como FUSÃO ERRADA?\n\n"${t.descricao||t.desc_importada||t.subcategoria}"\n\nO agente vai revisar essa conciliação na próxima sessão. O lançamento NÃO é alterado agora.`))return;
+  const ok=await gravarFeedback(t.id,'Fusao errada',`grupo ${t.id_grupo||'—'} / doc ${t.doc_origem||'—'}`,'revisar conciliação');
+  if(ok){toast('ok','✓ sinalizado para o agente');closeM('ov-lanc-detail');}
+  else toast('err','falha ao gravar feedback');
 }
 
-function impParseOFX(text){
-  // Try to extract bank info
-  const bankId=(text.match(/<BANKID>([^<\n]+)/i)||[])[1]||'';
-  const acctId=(text.match(/<ACCTID>([^<\n]+)/i)||[])[1]||'';
-  _impMeta.bankId=bankId;_impMeta.acctId=acctId;
-  _impMeta.bankName=bankId==='260'?'nubank':bankId==='102'?'xp':bankId==='341'?'itau':bankId==='033'?'santander':bankId;
-  return(text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi)||[]).map(t=>{
-    const g=tag=>{const m=t.match(new RegExp('<'+tag+'>([^<\\n]+)','i'));return m?m[1].trim():'';};
-    const amt=parseFloat(g('TRNAMT').replace(',','.'))||0;const d=g('DTPOSTED').substring(0,8);
-    return{fitid:g('FITID'),date:d?`${d.substring(0,4)}-${d.substring(4,6)}-${d.substring(6,8)}`:'',amount:amt,memo:g('MEMO')||g('NAME')||'',isCredit:amt>0};
-  }).filter(t=>t.date&&t.amount!==0);
+// ═══════════════════════════════════════════
+// A4 — BADGE DE CONFIANÇA
+// ═══════════════════════════════════════════
+function badgeConfianca(t){
+  const c=lc(t&&t.confianca);
+  if(!c)return '';
+  const map={total:['green','✓ Total'],alta:['blue','▲ Alta'],baixa:['gold','⚠ Baixa'],manual:['gray','✎ Manual']};
+  const m=map[c]||['gray',t.confianca];
+  return `<span class="tag ${m[0]}" style="font-size:8px">${m[1]}</span>`;
 }
 
-function impParseCSV(text){
-  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);if(lines.length<2)return[];
-  const sep=lines[0].includes('\t')?'\t':lines[0].includes(';')?';':',';
-  const hdrs=lines[0].split(sep).map(h=>h.trim().toLowerCase().replace(/"/g,''));
-  const iD=hdrs.findIndex(h=>h.includes('data')||h.includes('date'));
-  const iV=hdrs.findIndex(h=>h.includes('valor')||h.includes('amount'));
-  const iM=hdrs.findIndex(h=>h.includes('descri')||h.includes('title')||h.includes('memo'));
-  const iI=hdrs.findIndex(h=>h.includes('id')||h.includes('identificador'));
-  if(iD<0||iV<0)return[];
-  return lines.slice(1).map((l,i)=>{
-    const c=l.split(sep).map(x=>x.trim().replace(/"/g,''));const amt=parseFloat((c[iV]||'0').replace(',','.'))||0;
-    let dt=c[iD]||'';if(dt.includes('/'))dt=dt.split('/').reverse().join('-');
-    return{fitid:iI>=0?(c[iI]||'csv'+i):'csv'+i,date:dt,amount:amt,memo:iM>=0?(c[iM]||''):'',isCredit:amt>0};
-  }).filter(t=>t.date&&t.amount!==0);
+// ═══════════════════════════════════════════
+// A5 — PÁGINA "DO AGENTE" (auditoria rápida)
+// ═══════════════════════════════════════════
+let _agenteDias=7;
+// A automação de verdade é o gatilho de tempo do Apps Script (a cada 10 min,
+// sem toque humano). Este botão só serve para NÃO esperar durante um teste.
+async function verificarPendentesAgora(){
+  toast('loading','verificando _pendentes/…');
+  const r=await gasPost({action:'aplicarAgora'});
+  if(r&&r.ok){
+    const res=r.resultado||{};
+    if(res.arquivosAplicados>0){
+      toast('ok',`✓ ${res.arquivosAplicados} arquivo(s) aplicado(s), ${res.linhasAplicadas} linha(s)`);
+      await syncAll();
+    } else {
+      toast('ok','nada pendente para aplicar');
+    }
+  } else {
+    toast('err','falha ao verificar — confira o Apps Script');
+  }
+}
+function setAgenteP(d){
+  _agenteDias=d;
+  [7,30,0].forEach(x=>document.getElementById('agf'+x)?.classList.toggle('on',x===d));
+  renderAgente();
 }
 
+function renderAgente(){
+  const el=document.getElementById('agenteList');
+  if(!el)return;
+  let txs=S.lancamentos.filter(ehDoAgente);
+  if(_agenteDias>0){
+    const corte=new Date();corte.setDate(corte.getDate()-_agenteDias);
+    const cs=`${corte.getFullYear()}-${Z(corte.getMonth()+1)}-${Z(corte.getDate())}`;
+    txs=txs.filter(t=>(t.dt_transacao||'')>=cs);
+  }
+  txs.sort((a,b)=>(b.dt_transacao||'').localeCompare(a.dt_transacao||''));
 
-// ── Helper: encontrar cenário das regras_operacionais pelo tipo+forma ──
-function impFindCenario(tipo,forma){
-  const regras=S.regras_op||[];
-  // Match exato: tipo_fluxo + forma nas formas_permitidas
-  let match=regras.find(r=>r.ativo&&lc(r.tipo_fluxo)===lc(tipo)&&r.formas_permitidas.some(f=>lc(f)===lc(forma)));
-  // Fallback: só tipo_fluxo
-  if(!match)match=regras.find(r=>r.ativo&&lc(r.tipo_fluxo)===lc(tipo));
-  return match;
-}
+  const pend=(S.feedback||[]).filter(f=>lc(f.status)!=='processado').length;
+  document.getElementById('agenteCount').textContent=`${txs.length} lançamento(s)${pend?` · ${pend} na fila`:''}`;
 
-// ── Helper: parsear campos_auto da regra ──
-function impParseCamposAuto(regra){
-  if(!regra?.campos_auto)return{};
-  const result={};
-  regra.campos_auto.split(',').map(s=>s.trim()).forEach(item=>{
-    const eq=item.indexOf('=');
-    if(eq>0){result[item.substring(0,eq).trim()]=item.substring(eq+1).trim();}
-    else{result[item]='';}
-  });
-  return result;
-}
+  if(!txs.length){
+    el.innerHTML='<div style="color:var(--tx3);padding:30px;text-align:center;font-size:12px">Nenhum lançamento do agente neste período.<br>Quando o Claude processar documentos da ConFIA-Inbox, eles aparecem aqui.</div>';
+    return;
+  }
 
-// ── Helper: parsear observacao do classificador (ex: nome_ativo=Caixinha Nubank) ──
-function impParseObs(obs){
-  if(!obs)return{};
-  const result={};
-  (obs.match(/(\w+)=([^,;]+)/g)||[]).forEach(m=>{
-    const eq=m.indexOf('=');
-    result[m.substring(0,eq).trim()]=m.substring(eq+1).trim();
-  });
-  return result;
-}
-
-function impClassificar(){
-  _impConta=document.getElementById('imp-conta-sel').value;if(!_impConta){toast('err','Selecione a conta');return;}
-  const regras=(S.classificador||[]).filter(r=>String(r.ativo||'sim').toLowerCase()!=='nao').sort((a,b)=>(parseInt(a.ordem)||99)-(parseInt(b.ordem)||99));
-  // Moeda da conta selecionada
-  const contaObj=S.contas.find(c=>c.nome===_impConta);
-  const moedaConta=contaObj?.moeda||'BRL';
-  const seen={};
-
-  _impResults=_impData.map(tx=>{
-    const absVal=Math.abs(tx.amount);const desc=tx.memo;
-    // Duplicatas
-    const dupCerto=S.lancamentos.some(l=>l.id===tx.fitid)||(S.lancamentos.some(l=>l.dt_transacao===tx.date&&Math.abs(l.valor-absVal)<0.01&&(l.desc_importada||l.descricao_importada||'')===desc));
-    const dupProvavel=!dupCerto&&S.lancamentos.some(l=>l.dt_transacao===tx.date&&Math.abs(l.valor-absVal)<0.01);
-    const fileKey=tx.date+'|'+absVal.toFixed(2)+'|'+desc;const dupIntra=seen[fileKey]||false;seen[fileKey]=true;
-
-    // Classificador regex
-    let match=null;
-    for(const r of regras){try{if(new RegExp(String(r.regex||''),'i').test(desc)){match=r;break;}}catch(_){}}
-
-    const tipo=match?.tipo_fluxo||(tx.isCredit?'Entradas':'Saídas');
-    const classe=match?.classe||'';const categoria=match?.categoria||'';const sub=match?.subcategoria||'';
-    const forma=match?.forma_transacao||'Pix';const fav=match?.favorecido_padrao||'';const obs=match?.observacao||'';
-    const revisar=String(match?.exigir_revisao_obrigatoria||'').toLowerCase()==='sim';
-    const reemb=match?.reembolsavel||'';const tipoReemb=match?.tipo_reembolso||'';
-
-    // Parsear extras da observação do classificador
-    const obsData=impParseObs(obs);
-    const nomeAtivo=obsData.nome_ativo||'';
-    const contaDest=obsData.conta_destino||'';
-
-    // Encontrar cenário nas regras_operacionais
-    const cenario=impFindCenario(tipo,forma);
-    const camposAuto=impParseCamposAuto(cenario);
-
-    // Derivar campos dos campos_auto (zero hardcode)
-    const statusInicial=cenario?.status_inicial||dicVal('status','Liquidado')||'Liquidado';
-    const dtLiq=lc(statusInicial)==='liquidado'?tx.date:'';
-    // Reembolso: só para Saídas. Entradas e Transferências = vazio
-    const isSaida=lc(tipo)==='saídas'||lc(tipo)==='saida';
-    const reembFinal=isSaida?(reemb||(camposAuto.reembolsavel?dicVal('reembolsavel',camposAuto.reembolsavel):'')):'';
-    const statusReemb=isSaida?(camposAuto.status_reembolso?dicVal('status_reembolso',camposAuto.status_reembolso):''):'';
-
-    // Conta: Saída = extrato é origem. Entrada = extrato é destino.
-    const isEntrada=lc(tipo)==='entradas'||lc(tipo)==='entrada';
-    const contaOrigem=isEntrada?'':_impConta;
-    const contaDestinoFinal=isEntrada?_impConta:(contaDest||'');
-    const origemLanc=camposAuto.origem_lancamento?dicVal('origem_lancamento',camposAuto.origem_lancamento):(dicVal('origem_lancamento','Importado')||'Importado');
-    const statusConc=camposAuto.status_conciliacao?dicVal('status_conciliacao',camposAuto.status_conciliacao):(dicVal('status_conciliacao','Criado por importação')||'Criado por importação');
-    const fechado=camposAuto.fechado?dicVal('fechado',camposAuto.fechado):(dicVal('fechado','Não')||'Não');
-
-    // Parcelas: só preenche se cenário tem qtd_parcelas nos campos_auto
-    const parcelas=camposAuto.qtd_parcelas||'';
-    const numParcela=camposAuto.num_parcela||'';
-
-    // Grupo: transferências geram id_grupo
-    const isTransf=lc(tipo).includes('transfer');
-    const idGrupo=isTransf?'G'+Date.now()+Math.random().toString(36).substr(2,4):'';
-
-    let color='red';
-    if(dupCerto)color='skip';else if(dupIntra)color='dup-intra';else if(dupProvavel)color='dup-prob';
-    else if(classe&&sub&&!revisar)color='green';else if((classe&&sub&&revisar)||(classe&&!sub))color='yellow';
-
-    const ruleExists=classe&&sub&&regras.some(r=>{try{return r.subcategoria===sub&&new RegExp(String(r.regex||''),'i').test(desc);}catch(_){return false;}});
-
-    return{...tx,absVal,tipo,classe,categoria,sub,forma,fav,obs,revisar,color,
-      dupCerto,dupProvavel,dupIntra,conta:contaOrigem,contaDest:contaDestinoFinal,nomeAtivo,
-      moeda:moedaConta,reemb:reembFinal,tipoReemb,
-      cartao:'',faturaRef:'',
-      status:statusInicial,dtLiq,statusReemb,origemLanc,statusConc,fechado,
-      parcelas,numParcela,
-      ruleExists,saved:false,edited:false,idGrupo,
-      cenarioNome:cenario?.cenario||''};
-  });
-  document.getElementById('imp-banner').innerHTML=`📊 ${_impConta} · ${impFmtDate(_impMeta.dtMin)} a ${impFmtDate(_impMeta.dtMax)} · ${_impResults.length} transações`;
-  document.getElementById('imp-conta').style.display='none';document.getElementById('imp-preview').style.display='';
-  impRenderList();impUpdProgress();
-}
-
-function impFilter(f){_impFilter=f;document.querySelectorAll('#imp-preview .pill').forEach(p=>p.classList.remove('on'));document.getElementById('imp-f'+{all:'All',red:'Red',yellow:'Yel',green:'Green',dup:'Dup',saved:'Saved'}[f])?.classList.add('on');impRenderList();}
-
-const _mAbr=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-function impFmtDate(d){if(!d)return'—';const p=d.split('-');if(p.length<3)return d;return p[2]+'-'+(_mAbr[parseInt(p[1])-1]||p[1])+'-'+p[0].substring(2);}
-
-function impUpdProgress(){
-  const total=_impResults.filter(r=>r.color!=='skip').length;
-  const saved=_impResults.filter(r=>r.saved).length;
-  const pct=total?Math.round(saved/total*100):0;
-  document.getElementById('imp-progress').style.width=pct+'%';
-  document.getElementById('imp-prog-text').textContent=`${saved}/${total}`;
-}
-
-function impRenderList(){
-  const g=_impResults.filter(r=>r.color==='green'&&!r.saved).length;
-  const y=_impResults.filter(r=>r.color==='yellow'&&!r.saved).length;
-  const rd=_impResults.filter(r=>r.color==='red').length;
-  const sk=_impResults.filter(r=>r.color==='skip').length;
-  const dp=_impResults.filter(r=>(r.color==='dup-prob'||r.color==='dup-intra')&&!r.saved).length;
-  const sv=_impResults.filter(r=>r.saved).length;
-  document.getElementById('imp-stats').innerHTML=`<span style="color:var(--green)">${g}ok</span> · <span style="color:var(--amber)">${y}rev</span> · <span style="color:var(--red)">${rd}inc</span> · <span style="color:var(--tx3)">${sk}dup</span>${dp?` · <span style="color:var(--amber)">${dp}dup?</span>`:''} · <span style="color:var(--green)">${sv}✅</span>`;
-  const filtered=_impResults.filter(r=>{
-    if(_impFilter==='all')return r.color!=='skip';
-    if(_impFilter==='dup')return r.color==='dup-prob'||r.color==='dup-intra';
-    if(_impFilter==='saved')return r.saved;
-    return r.color===_impFilter&&!r.saved;
-  });
-  const contasAll=S.contas.filter(c=>c.atual);const cartoes=S.contas.filter(c=>c.atual&&c.tipo==='Cartão de crédito');
-  const moedas=S.moedasList?.length?S.moedasList:['BRL','USD','EUR','JPY'];
-  const ativosOpts=S.ativos.filter(a=>a.atual);
   let h='';
-  filtered.forEach((r)=>{const idx=_impResults.indexOf(r);const sign=r.isCredit?'+':'−';
-    const dupLabel=r.color==='dup-prob'?'<span class="imp-tag warn">provável dup</span>':r.color==='dup-intra'?'<span class="imp-tag warn">dup no arquivo</span>':'';
-    const savedLabel=r.saved?'<span class="imp-tag ok">✅ salvo</span>':'';
-    const suggestRule=!r.ruleExists&&r.classe&&r.sub&&!r.saved;
-    const isSaida=lc(r.tipo)==='saídas'||lc(r.tipo)==='saida';const isCredito=lc(r.forma).includes('crédito')||lc(r.forma).includes('credito');const isTransf=lc(r.tipo).includes('transfer');
-    h+=`<div class="imp-item ${r.saved?'green':r.color==='dup-prob'||r.color==='dup-intra'?'yellow':r.color}" ${r.saved?'style="opacity:.5"':''} onclick="${r.saved?'':'impToggleEdit('+idx+',event)'}">
-      <div class="imp-row1"><span class="imp-date">${impFmtDate(r.date)}</span><span class="imp-desc">${r.memo}</span><span class="imp-val ${r.isCredit?'pos':'neg'}">${sign}${R(r.absVal)}</span></div>
-      <div class="imp-row2">${r.tipo?`<span class="imp-tag">${r.tipo}</span>`:''}${r.classe?`<span class="imp-tag">${r.classe}</span>`:''}${r.sub?`<span class="imp-tag ok">${r.sub}</span>`:'<span class="imp-tag err">classificar</span>'}${r.forma?`<span class="imp-tag">${r.forma}</span>`:''}${r.nomeAtivo?`<span class="imp-tag" style="background:var(--b-bg);color:var(--blue)">${r.nomeAtivo}</span>`:''}${dupLabel}${savedLabel}</div>
-      <div class="imp-edit" id="imp-edit-${idx}" onclick="event.stopPropagation()">
-        <div style="font:400 10px var(--fm);color:var(--tx3);margin-bottom:8px;padding:4px 6px;background:var(--s3);border-radius:4px">📝 ${r.memo}</div>
-        ${r.cenarioNome?`<div style="font:400 9px var(--f);color:var(--gold);margin-bottom:6px">Cenário: ${r.cenarioNome}</div>`:''}
-        <div style="font:600 9px var(--f);color:var(--tx3);margin:8px 0 4px;text-transform:uppercase">Classificação</div>
-        <div class="frow"><div class="fg"><label class="fl">Tipo</label><select class="fs" id="imp-tipo-${idx}" onchange="impUpdCls(${idx})">${['Saídas','Entradas','Transferências','Patrimonial'].map(t=>`<option value="${t}" ${t===r.tipo?'selected':''}>${t}</option>`).join('')}</select></div><div class="fg"><label class="fl">Classe</label><select class="fs" id="imp-cls-${idx}" onchange="impUpdCat(${idx})"></select></div></div>
-        <div class="frow"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="imp-cat-${idx}" onchange="impUpdSub(${idx})"></select></div><div class="fg"><label class="fl">Subcategoria</label><select class="fs" id="imp-sub-${idx}"></select></div></div>
-        <div style="font:600 9px var(--f);color:var(--tx3);margin:8px 0 4px;text-transform:uppercase">Transação</div>
-        <div class="frow"><div class="fg"><label class="fl">Forma</label><select class="fs" id="imp-forma-${idx}">${S.formasPagamento.map(f=>`<option value="${f}" ${f===r.forma?'selected':''}>${f}</option>`).join('')}</select></div><div class="fg"><label class="fl">Moeda</label><select class="fs" id="imp-moeda-${idx}">${moedas.map(m=>`<option value="${m}" ${m===r.moeda?'selected':''}>${m}</option>`).join('')}</select></div></div>
-        <div class="frow"><div class="fg"><label class="fl">Favorecido</label><input type="text" class="fi" id="imp-fav-${idx}" value="${r.fav}"></div><div class="fg"><label class="fl">Status</label><input type="text" class="fi" id="imp-status-${idx}" value="${r.status}" disabled style="opacity:.6"></div></div>
-        <div style="font:600 9px var(--f);color:var(--tx3);margin:8px 0 4px;text-transform:uppercase">Contas e Ativos</div>
-        <div class="frow"><div class="fg"><label class="fl">Conta origem</label><input type="text" class="fi" value="${r.conta||'—'}" disabled style="opacity:.6"></div><div class="fg"><label class="fl">Conta destino</label><select class="fs" id="imp-cdest-${idx}"><option value="">—</option>${contasAll.map(c=>`<option value="${c.nome}" ${c.nome===(r.contaDest||'')?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}</select></div></div>
-        <div class="frow"><div class="fg"><label class="fl">Nome ativo</label><select class="fs" id="imp-ativo-${idx}"><option value="">—</option>${ativosOpts.map(a=>`<option value="${a.nome||a.id}" ${(a.nome||a.id)===r.nomeAtivo?'selected':''}>${a.nome||a.id}</option>`).join('')}</select></div>${isCredito?`<div class="fg"><label class="fl">Cartão</label><select class="fs" id="imp-cartao-${idx}"><option value="">—</option>${cartoes.map(c=>`<option value="${c.nome}">${c.icone} ${c.nome}</option>`).join('')}</select></div>`:`<div class="fg"></div>`}</div>
-        ${isCredito?`<div class="fg"><label class="fl">Fatura ref</label><input type="month" class="fi" id="imp-fatura-${idx}"></div>`:''}
-        ${isSaida?`<div style="font:600 9px var(--f);color:var(--tx3);margin:8px 0 4px;text-transform:uppercase">Reembolso</div><div class="frow"><div class="fg"><label class="fl">Reembolsável</label><select class="fs" id="imp-reemb-${idx}"><option value="" ${!r.reemb?'selected':''}>Não</option><option value="Sim" ${r.reemb==='Sim'?'selected':''}>Sim</option></select></div><div class="fg"><label class="fl">Tipo reembolso</label><select class="fs" id="imp-treemb-${idx}"><option value="">—</option><option value="Plano de saúde">Plano de saúde</option><option value="Empresa">Empresa</option><option value="Terceiro">Terceiro</option><option value="Divisão casal">Divisão casal</option><option value="Outro">Outro</option></select></div></div>`:''}
-        <div style="font:600 9px var(--f);color:var(--tx3);margin:8px 0 4px;text-transform:uppercase;cursor:pointer" onclick="document.getElementById('imp-auto-${idx}').style.display=document.getElementById('imp-auto-${idx}').style.display==='none'?'':'none'">▸ Campos automáticos</div>
-        <div id="imp-auto-${idx}" style="display:none;font:300 10px var(--fm);color:var(--tx3);padding:4px;background:var(--s3);border-radius:4px">
-          Origem: ${r.origemLanc} · Conciliação: ${r.statusConc} · Fechado: ${r.fechado}${r.parcelas?` · Parcelas: ${r.parcelas}/${r.numParcela||1}`:' · Parcelas: —'}${r.idGrupo?` · Grupo: ${r.idGrupo.substring(0,10)}…`:''}
+  if(pend){
+    h+=`<div class="alert-banner" style="cursor:default"><span class="ico">🎓</span><span style="flex:1">${pend} correção(ões) aguardando o agente aprender (fila feedback)</span></div>`;
+  }
+  const baixas=txs.filter(t=>lc(t.confianca)==='baixa').length;
+  if(baixas){
+    h+=`<div class="alert-banner" style="cursor:default"><span class="ico">⚠️</span><span style="flex:1">${baixas} com confiança BAIXA — vale conferir contra o documento</span></div>`;
+  }
+
+  txs.forEach(t=>{
+    const sign=lc(t.tipo).includes('entrada');
+    h+=`<div onclick="openLancDetail('${t.id}')" style="cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--bdr)" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+      <span style="font:500 10px var(--fm);color:var(--tx3);min-width:42px">${dfmt(t.dt_transacao)}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:500;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.descricao||t.desc_importada||t.favorecido||t.subcategoria||'—'}</div>
+        <div style="font-size:10px;color:var(--tx3);display:flex;gap:6px;margin-top:2px;flex-wrap:wrap">
+          <span>${getIco(t.classe)} ${t.subcategoria||''}</span>
+          ${t.doc_origem?`<span style="opacity:.7">📄 ${t.doc_origem}</span>`:''}
         </div>
-        <div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">
-          <button class="btn sm" onclick="impSaveOne(${idx});event.stopPropagation()">💾 Salvar</button>
-          <label style="display:flex;align-items:center;gap:4px;font:400 10px var(--f);color:var(--tx3);cursor:pointer"><input type="checkbox" id="imp-rule-${idx}" ${suggestRule?'checked':''}> Regra${suggestRule?' 💡':''}</label>
-          ${r.color==='dup-prob'||r.color==='dup-intra'?`<button class="btn2 sm" onclick="_impResults[${idx}].color='skip';impRenderList();impUpdProgress();event.stopPropagation()" style="color:var(--red)">✕ É dup</button><button class="btn2 sm" onclick="_impResults[${idx}].color=_impResults[${idx}].classe&&_impResults[${idx}].sub?'green':'red';impRenderList();event.stopPropagation()">Não é dup</button>`:''}
-        </div>
-      </div></div>`;
+      </div>
+      <div style="text-align:right">
+        <div style="font:600 12px var(--fm);color:var(${sign?'--green':'--red'})">${sign?'+':'−'}${R(Math.abs(t.valor))}</div>
+        ${badgeConfianca(t)}
+      </div>
+    </div>`;
   });
-  document.getElementById('imp-list').innerHTML=h||'<div style="padding:20px;text-align:center;color:var(--tx3)">Nenhum neste filtro</div>';
+  el.innerHTML=h;
 }
 
-function impToggleEdit(idx,ev){if(ev&&ev.target.closest('.imp-edit'))return;const el=document.getElementById('imp-edit-'+idx);if(!el)return;const on=el.style.display==='block';document.querySelectorAll('.imp-edit').forEach(e=>e.style.display='none');if(!on){el.style.display='block';impUpdCls(idx);}}
-function impUpdCls(idx){const t=document.getElementById('imp-tipo-'+idx)?.value||'Saídas';const cls=[...new Set(S.categorias.filter(c=>c.tipo===t&&c.atual).map(c=>c.classe))].sort();const el=document.getElementById('imp-cls-'+idx);const p=_impResults[idx]?.classe||'';el.innerHTML=cls.map(c=>`<option value="${c}" ${c===p?'selected':''}>${getIco(c)} ${c}</option>`).join('');impUpdCat(idx);}
-function impUpdCat(idx){const t=document.getElementById('imp-tipo-'+idx)?.value||'';const cl=document.getElementById('imp-cls-'+idx)?.value||'';const cats=[...new Set(S.categorias.filter(c=>c.tipo===t&&c.classe===cl&&c.atual).map(c=>c.categoria))].sort();const el=document.getElementById('imp-cat-'+idx);const p=_impResults[idx]?.categoria||'';el.innerHTML=cats.map(c=>`<option value="${c}" ${c===p?'selected':''}>${getCatIco(c)} ${c}</option>`).join('');impUpdSub(idx);}
-function impUpdSub(idx){const t=document.getElementById('imp-tipo-'+idx)?.value||'';const cl=document.getElementById('imp-cls-'+idx)?.value||'';const ca=document.getElementById('imp-cat-'+idx)?.value||'';const subs=S.categorias.filter(c=>c.tipo===t&&c.classe===cl&&c.categoria===ca&&c.atual);const el=document.getElementById('imp-sub-'+idx);const p=_impResults[idx]?.sub||'';el.innerHTML=subs.map(c=>`<option value="${c.subcategoria}" ${c.subcategoria===p?'selected':''}>${c.subcategoria}</option>`).join('');}
-
-async function impSaveOne(idx){
-  const r=_impResults[idx];
-  r.tipo=document.getElementById('imp-tipo-'+idx)?.value||r.tipo;
-  r.classe=document.getElementById('imp-cls-'+idx)?.value||r.classe;
-  r.categoria=document.getElementById('imp-cat-'+idx)?.value||r.categoria;
-  r.sub=document.getElementById('imp-sub-'+idx)?.value||r.sub;
-  r.forma=document.getElementById('imp-forma-'+idx)?.value||r.forma;
-  r.fav=document.getElementById('imp-fav-'+idx)?.value||r.fav;
-  r.moeda=document.getElementById('imp-moeda-'+idx)?.value||r.moeda;
-  r.contaDest=document.getElementById('imp-cdest-'+idx)?.value||'';
-  r.nomeAtivo=document.getElementById('imp-ativo-'+idx)?.value||'';
-  r.reemb=document.getElementById('imp-reemb-'+idx)?.value||'';
-  r.tipoReemb=document.getElementById('imp-treemb-'+idx)?.value||'';
-  r.cartao=document.getElementById('imp-cartao-'+idx)?.value||'';
-  r.faturaRef=document.getElementById('imp-fatura-'+idx)?.value||'';
-
-  if(!r.classe||!r.sub){toast('err','Preencha classe e subcategoria');return;}
-  if(!S.gasUrl){toast('err','Configure Apps Script');return;}
-  if(document.getElementById('imp-rule-'+idx)?.checked&&r.memo&&r.classe&&r.sub){await impSaveRule(r);}
-
-  // Re-derive cenário com forma atualizada
-  const cenario=impFindCenario(r.tipo,r.forma);
-  const camposAuto=impParseCamposAuto(cenario);
-
-  const dt=r.date;const comp=dt.substring(0,7)+'-01';
-  const statusFinal=r.status||cenario?.status_inicial||'Liquidado';
-  const isLiq=lc(statusFinal)==='liquidado';
-  const dtLiq=isLiq?dt:'';
-  const reembFinal=r.reemb||camposAuto.reembolsavel||'';
-  const isSaidaSave=lc(r.tipo)==='saídas'||lc(r.tipo)==='saida';
-  const statusReembFinal=isSaidaSave?(reembFinal==='Sim'?(camposAuto.status_reembolso||'Aguardando'):(r.statusReemb||camposAuto.status_reembolso||'')):'';
-  const parcFinal=camposAuto.qtd_parcelas||'';
-  const numPFinal=camposAuto.num_parcela||'';
-  const isTransf=lc(r.tipo).includes('transfer');
-  const grp=isTransf?r.idGrupo:'';
-
-  // Recalcular conta origem/destino baseado no tipo atualizado
-  const isEntradaSave=lc(r.tipo)==='entradas'||lc(r.tipo)==='entrada';
-  const contaOrigemFinal=isEntradaSave?'':(_impConta||r.conta||'');
-  const contaDestFinal=isEntradaSave?(_impConta||r.contaDest||''):(r.contaDest||'');
-
-  const row=[r.fitid,grp,dt,comp,dtLiq,
-    r.tipo,r.classe,r.categoria,r.sub,r.moeda,r.forma,
-    r.absVal,r.absVal,parcFinal||'',numPFinal||'',
-    contaOrigemFinal,contaDestFinal,r.nomeAtivo||'',r.cartao||'',r.faturaRef||'',
-    dicVal('reembolsavel',reembFinal)||'',r.tipoReemb||'',dicVal('status_reembolso',statusReembFinal)||'',
-    r.fav,'',r.memo,
-    dicVal('status',statusFinal)||statusFinal,
-    r.statusConc||dicVal('status_conciliacao','Criado por importação')||'',
-    r.origemLanc||dicVal('origem_lancamento','Importado')||'',
-    r.fechado||dicVal('fechado','Não')||''];
-
-  const ok=await gasPost({action:'append',tab:'Lancamentos',rows:[row]});
-  if(ok?.ok){
-    r.saved=true;r.color='green';
-    S.lancamentos.push({id:r.fitid,id_grupo:grp,dt_transacao:dt,dt_competencia:dt.substring(0,7),dt_liquidacao:dtLiq,tipo:lc(r.tipo),classe:r.classe,categoria:r.categoria,subcategoria:r.sub,moeda:r.moeda,forma:lc(r.forma),valor:r.absVal,conta_origem:contaOrigemFinal,conta_destino:contaDestFinal,nome_ativo:r.nomeAtivo||'',descricao_importada:r.memo,favorecido:r.fav,status:lc(statusFinal),origem:'importado'});
-    document.getElementById('imp-edit-'+idx).style.display='none';
-    impRenderList();impUpdProgress();
-    toast('ok','✓ salvo');
-  } else {toast('err','❌ falha: '+(ok?.error||''));}
-}
-
-async function impSaveRule(r){
-  const regras=(S.classificador||[]);
-  const alreadyMatched=regras.some(rr=>{try{return new RegExp(String(rr.regex||''),'i').test(r.memo)&&rr.subcategoria===r.sub;}catch(_){return false;}});
-  if(alreadyMatched)return;
-  const w=r.memo.split(/\s+/).slice(0,5).join(' ');const regex='^'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  const maxOrd=Math.max(...regras.map(c=>parseInt(c.ordem)||0),0);
-  // Incluir nome_ativo e conta_destino na observação se existirem
-  let obsParts=[];if(r.nomeAtivo)obsParts.push('nome_ativo='+r.nomeAtivo);if(r.contaDest)obsParts.push('conta_destino='+r.contaDest);
-  const row=[maxOrd+1,'regex',regex,r.tipo,r.classe,r.categoria,r.sub,r.forma,r.reemb||'',r.tipoReemb||'',r.fav,'nao',obsParts.length?obsParts.join('; '):'Criado pelo importador','sim'];
-  if(S.gasUrl)await gasPost({action:'append',tab:'classificador',rows:[row]});
-  S.classificador.push({ordem:maxOrd+1,regex,tipo_fluxo:r.tipo,classe:r.classe,categoria:r.categoria,subcategoria:r.sub,forma_transacao:r.forma,favorecido_padrao:r.fav,observacao:obsParts.join('; '),exigir_revisao_obrigatoria:'nao',ativo:'sim'});
-  toast('ok','✓ regra salva');
-}
 
 // TOOLTIP RICO — mostra info do dicionário
 // ═══════════════════════════════════════════
