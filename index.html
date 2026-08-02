@@ -489,6 +489,17 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;mi
 </div>
 </div>
 
+<!-- ══ MODAL: VALIDAÇÃO PÓS-INGESTÃO (A15) ═══════ -->
+<div class="modal-ov" id="ov-validar">
+<div class="modal" style="max-width:480px">
+  <div class="modal-head"><div class="modal-title">⚠️ Validar valores do agente</div><button class="modal-close" onclick="closeM('ov-validar')">✕</button></div>
+  <div id="validarBody"></div>
+  <div class="modal-foot" style="justify-content:flex-end">
+    <button class="btn2" onclick="closeM('ov-validar')">Depois</button>
+  </div>
+</div>
+</div>
+
 <!-- ══ MODAL: DETALHE LANÇAMENTO ═══════ -->
 <div class="modal-ov" id="ov-lanc-detail">
 <div class="modal" style="max-width:520px">
@@ -653,8 +664,8 @@ async function syncAll(){
     if(!orc||orc.length<=1)orc=await sheetRead('orcamentos');
     if(orc&&orc.length>1)S.orcamentos=orc.slice(1).map(r=>({tipo:String(r[0]||''),classe:String(r[1]||''),categoria:String(r[2]||''),subcategoria:String(r[3]||''),dt:compDate(r[4]),valor:parseNum(r[5])})).filter(o=>o.subcategoria&&o.dt);
 
-    // Lançamentos (34 colunas reais: 0-29 = schema base, 30-31 = "IMPORTAÇÃO
-    // CONFIANTE?"/"REVISADO?" — não lidas aqui, sem uso no app hoje —,
+    // Lançamentos (34 colunas reais: 0-29 = schema base, 30 = "IMPORTAÇÃO
+    // CONFIANTE?" (sem uso), 31 = "REVISADO?" (A15: validação pós-ingestão),
     // 32-33 = confianca/doc_origem, localizadas por HEADER, não por índice fixo)
     const lanc=await sheetRead('Lancamentos');
     if(lanc&&lanc.length>1){
@@ -662,9 +673,12 @@ async function syncAll(){
       const lh=(lanc[0]||[]).map(h=>String(h||'').toLowerCase().trim());
       const iConf=lh.indexOf('confianca')>=0?lh.indexOf('confianca'):lh.indexOf('confiança');
       const iDoc=lh.indexOf('doc_origem');
-      S.lancamentos=lanc.slice(1).map(r=>{
+      // A15 — coluna REVISADO? (validação humana pós-ingestão)
+      const iRev=lh.findIndex(h=>h.startsWith('revisado'));
+      S._lancRevCol=iRev>=0?_colLetter(iRev+1):'';
+      S.lancamentos=lanc.slice(1).map((r,ix)=>{
         if(!r||r.length<5||!r[0])return null;
-        return{id:String(r[0]||''),id_grupo:String(r[1]||''),dt_transacao:parseDate(r[2]),dt_competencia:compDate(r[3]),dt_liquidacao:parseDate(r[4]),tipo:String(r[5]||'').toLowerCase(),classe:String(r[6]||''),categoria:String(r[7]||''),subcategoria:String(r[8]||''),moeda:String(r[9]||'BRL'),forma:String(r[10]||'').toLowerCase(),valor_total:parseNum(r[11]),valor:parseNum(r[12]),parcelas:parseInt(r[13])||1,num_parcela:parseInt(r[14])||1,conta_origem:String(r[15]||''),conta_destino:String(r[16]||''),nome_ativo:String(r[17]||''),cartao:String(r[18]||''),fatura_ref:String(r[19]||''),reembolsavel:String(r[20]||''),tipo_reembolso:String(r[21]||''),status_reembolso:String(r[22]||''),favorecido:String(r[23]||''),descricao:String(r[24]||''),desc_importada:String(r[25]||''),status:String(r[26]||'').toLowerCase(),origem:String(r[28]||''),fechado:String(r[29]||''),confianca:iConf>=0?String(r[iConf]||''):'',doc_origem:iDoc>=0?String(r[iDoc]||''):''};
+        return{id:String(r[0]||''),id_grupo:String(r[1]||''),dt_transacao:parseDate(r[2]),dt_competencia:compDate(r[3]),dt_liquidacao:parseDate(r[4]),tipo:String(r[5]||'').toLowerCase(),classe:String(r[6]||''),categoria:String(r[7]||''),subcategoria:String(r[8]||''),moeda:String(r[9]||'BRL'),forma:String(r[10]||'').toLowerCase(),valor_total:parseNum(r[11]),valor:parseNum(r[12]),parcelas:parseInt(r[13])||1,num_parcela:parseInt(r[14])||1,conta_origem:String(r[15]||''),conta_destino:String(r[16]||''),nome_ativo:String(r[17]||''),cartao:String(r[18]||''),fatura_ref:String(r[19]||''),reembolsavel:String(r[20]||''),tipo_reembolso:String(r[21]||''),status_reembolso:String(r[22]||''),favorecido:String(r[23]||''),descricao:String(r[24]||''),desc_importada:String(r[25]||''),status:String(r[26]||'').toLowerCase(),origem:String(r[28]||''),fechado:String(r[29]||''),confianca:iConf>=0?String(r[iConf]||''):'',doc_origem:iDoc>=0?String(r[iDoc]||''):'',revisado:iRev>=0?String(r[iRev]||''):'',_row:ix+2};
       }).filter(Boolean).filter(t=>t.id&&t.valor);
     }
 
@@ -741,6 +755,7 @@ async function syncAll(){
     toast('ok',`✓ ${S.lancamentos.length}lnç · ${S.categorias.length}cat · ${S.orcamentos.length}orc · ${(S.validacoes||[]).length}val · ${(S.regras_op||[]).length}reg`);
     runValidation();
     renderCurrent();
+    checarValidacaoAgente(); // A15 — popup de validação pós-ingestão
   }catch(e){toast('err','erro: '+e.message);console.error(e);}
 }
 
@@ -993,7 +1008,9 @@ function renderLancDetail(t){
     let h=`<div style="font:600 10px var(--f);color:var(--gold);margin-bottom:8px">✏️ Editando lançamento ${t.id}</div>`;
     h+=`<div class="frow"><div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="le-dt" value="${t.dt_transacao}"></div>
       <div class="fg"><label class="fl">Valor</label><input type="number" class="fi" id="le-val" step="0.01" value="${t.valor}"></div></div>`;
-    h+=`<div class="frow"><div class="fg"><label class="fl">Classe</label><select class="fs" id="le-classe" onchange="leUpdCats()">${classes.map(c=>`<option value="${c}" ${c===t.classe?'selected':''}>${getIco(c)} ${c}</option>`).join('')}</select></div>
+    // A14 — valor fora do catálogo vira opção explícita marcada, nunca troca silenciosa
+    const classeFora=(t.classe&&!classes.includes(t.classe))?`<option value="${t.classe}" selected>🚫 ${t.classe} (fora do catálogo)</option>`:'';
+    h+=`<div class="frow"><div class="fg"><label class="fl">Classe</label><select class="fs" id="le-classe" onchange="leUpdCats()">${classeFora}${classes.map(c=>`<option value="${c}" ${c===t.classe?'selected':''}>${getIco(c)} ${c}</option>`).join('')}</select></div>
       <div class="fg"><label class="fl">Categoria</label><select class="fs" id="le-cat" onchange="leUpdSubs()"></select></div></div>`;
     h+=`<div class="fg"><label class="fl">Subcategoria</label><select class="fs" id="le-sub"></select></div>`;
     h+=`<div class="frow"><div class="fg"><label class="fl">Conta Origem</label><select class="fs" id="le-conta">${contas.map(c=>`<option value="${c.nome}" ${c.nome===t.conta_origem?'selected':''}>${c.icone} ${c.nome}</option>`).join('')}</select></div>
@@ -1034,7 +1051,18 @@ function renderLancDetail(t){
     const cor=c==='baixa'?'--a-bg':c==='total'?'--g-bg':'--b-bg';
     const bd=c==='baixa'?'--a-bd':c==='total'?'--g-bd':'--b-bd';
     h+=`<div style="background:var(${cor});border:1px solid var(${bd});border-radius:var(--r2);padding:8px 10px;margin-bottom:10px;font:400 11px var(--f);color:var(--tx2);display:flex;align-items:center;gap:8px">
-      <span>🤖</span><span style="flex:1">Criado pelo agente ${badgeConfianca(t)}${c==='baixa'?' — confira contra o documento antes de confiar':''}</span>
+      <span>🤖</span><span style="flex:1">Criado pelo agente ${badgeConfianca(t)}${c==='baixa'?(lc(t.revisado)==='sim'?' — valor já validado por você ✓':' — <b>valor ainda NÃO validado</b>, confira contra o documento'):''}</span>
+    </div>`;
+    // A15 — validar direto do detalhe, sem passar pela fila
+    if(c==='baixa'&&lc(t.revisado)!=='sim'){
+      h+=`<div style="margin-bottom:10px"><button class="btn sm" onclick="validarLancOk('${t.id}')">✓ Valor confere (validar)</button></div>`;
+    }
+  }
+  // A14 — aviso quando classe/categoria/subcategoria não existe no catálogo
+  const _fora=catForaDoCatalogo(t);
+  if(_fora.length){
+    h+=`<div style="background:var(--a-bg);border:1px solid var(--a-bd);border-radius:var(--r2);padding:8px 10px;margin-bottom:10px;font:400 11px var(--f);color:var(--tx2);display:flex;align-items:center;gap:8px">
+      <span>🚫</span><span style="flex:1">${_fora.map(f=>`<b>${f.campo}</b> "${f.valor}"`).join(', ')} fora do catálogo (aba Categorias) — edite e escolha um valor válido; a correção ensina o agente</span>
     </div>`;
   }
   h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:0">`;
@@ -1073,7 +1101,9 @@ function leUpdCats(selCat,selSub){
   const classe=document.getElementById('le-classe')?.value||'';
   const cats=[...new Set(S.categorias.filter(c=>c.tipo===tipo&&c.classe===classe&&c.atual).map(c=>c.categoria))];
   const catEl=document.getElementById('le-cat');
-  if(catEl){catEl.innerHTML=cats.map(c=>`<option value="${c}" ${c===selCat?'selected':''}>${getCatIco(c)} ${c}</option>`).join('');leUpdSubs(selSub);}
+  // A14 — categoria fora do catálogo vira opção explícita marcada
+  const catFora=(selCat&&!cats.includes(selCat))?`<option value="${selCat}" selected>🚫 ${selCat} (fora do catálogo)</option>`:'';
+  if(catEl){catEl.innerHTML=catFora+cats.map(c=>`<option value="${c}" ${c===selCat?'selected':''}>${getCatIco(c)} ${c}</option>`).join('');leUpdSubs(selSub);}
 }
 function leUpdSubs(selSub){
   const t=S.lancamentos.find(x=>x.id===_detailLancId);
@@ -1084,7 +1114,9 @@ function leUpdSubs(selSub){
   const subs=S.categorias.filter(c=>c.tipo===tipo&&c.classe===classe&&c.categoria===cat&&c.atual);
   const el=document.getElementById('le-sub');
   // A8: subcategoria com emoji também no modo edição
-  if(el)el.innerHTML=subs.map(c=>`<option value="${c.subcategoria}" ${c.subcategoria===selSub?'selected':''}>${c.icone_categoria||getCatIco(c.categoria)||''} ${c.subcategoria}</option>`).join('');
+  // A14 — subcategoria fora do catálogo vira opção explícita marcada
+  const subFora=(selSub&&!subs.some(c=>c.subcategoria===selSub))?`<option value="${selSub}" selected>🚫 ${selSub} (fora do catálogo)</option>`:'';
+  if(el)el.innerHTML=subFora+subs.map(c=>`<option value="${c.subcategoria}" ${c.subcategoria===selSub?'selected':''}>${c.icone_categoria||getCatIco(c.categoria)||''} ${c.subcategoria}</option>`).join('');
 }
 
 async function salvarEditLanc(){
@@ -1115,9 +1147,12 @@ async function salvarEditLanc(){
   }
   // A2 — se a linha era do agente, cada campo alterado entra na fila feedback
   await gravarFeedbackDiff(antes,t);
+  // A15 — corrigir à mão É validar: marca REVISADO? e sai da fila
+  if(ehDoAgente(t)&&lc(t.confianca)==='baixa'&&lc(t.revisado)!=='sim')await marcarRevisado(t.id);
   _lancEditMode=false;
   closeM('ov-lanc-detail');
   renderCurrent();
+  retomarValidacao(); // A15 — volta para a fila de validação, se havia uma
   toast('ok','✓ lançamento atualizado');
 }
 
@@ -2666,6 +2701,112 @@ function badgeConfianca(t){
 }
 
 // ═══════════════════════════════════════════
+// A14 — VALIDAÇÃO CONTRA O CATÁLOGO (aba Categorias)
+// Pega classe/categoria/subcategoria que não existem no catálogo vigente —
+// ex.: regra velha da memoria aplicada pelo agente. Aviso no detalhe e na
+// página Do Agente; a correção via edição vira feedback (ensina o agente).
+// ═══════════════════════════════════════════
+function catForaDoCatalogo(t){
+  if(!t||!(S.categorias||[]).length)return [];
+  const tipoMap={saida:'Saídas',entrada:'Entradas',transferencia:'Transferências',patrimonial:'Patrimonial'};
+  const tipo=tipoMap[lc(t.tipo)]||t.tipo;
+  const cs=S.categorias.filter(c=>c.tipo===tipo&&c.atual);
+  if(!cs.length)return [];
+  if(t.classe&&!cs.some(c=>c.classe===t.classe))return [{campo:'classe',valor:t.classe}];
+  if(t.categoria&&!cs.some(c=>c.classe===t.classe&&c.categoria===t.categoria))return [{campo:'categoria',valor:t.categoria}];
+  if(t.subcategoria&&!cs.some(c=>c.classe===t.classe&&c.categoria===t.categoria&&c.subcategoria===t.subcategoria))return [{campo:'subcategoria',valor:t.subcategoria}];
+  return [];
+}
+
+// ═══════════════════════════════════════════
+// A15 — VALIDAÇÃO PÓS-INGESTÃO (popup obrigatório)
+// Toda linha do agente com confiança BAIXA (valor veio de visão/inferência)
+// exige validação humana do VALOR: valida ou pula. Pulada volta na próxima
+// sessão. Estado persistido na coluna REVISADO? da planilha ('Sim').
+// Total/Alta não passam aqui: valor é determinístico (código) e a prova é
+// a conciliação bancária mensal.
+// ═══════════════════════════════════════════
+function _colLetter(n){let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;}
+let _validarFila=[];let _validarIdx=0;let _validarJaMostrou=false;
+
+function pendentesValidacao(){
+  return S.lancamentos.filter(t=>ehDoAgente(t)&&lc(t.confianca)==='baixa'&&lc(t.revisado)!=='sim');
+}
+
+function checarValidacaoAgente(){
+  if(_validarJaMostrou)return; // 1x por sessão do app; pular deixa p/ próxima
+  const pend=pendentesValidacao();
+  if(!pend.length||!S._lancRevCol)return;
+  _validarJaMostrou=true;
+  _validarFila=pend.map(t=>t.id);_validarIdx=0;
+  renderValidarCard();
+  openM('ov-validar');
+}
+
+function renderValidarCard(){
+  const el=document.getElementById('validarBody');
+  if(!el)return;
+  // pula ids que já foram validados nesta rodada
+  while(_validarIdx<_validarFila.length){
+    const t=S.lancamentos.find(x=>x.id===_validarFila[_validarIdx]);
+    if(t&&lc(t.revisado)!=='sim')break;
+    _validarIdx++;
+  }
+  if(_validarIdx>=_validarFila.length){
+    closeM('ov-validar');
+    toast('ok','validação concluída');
+    renderCurrent();
+    return;
+  }
+  const t=S.lancamentos.find(x=>x.id===_validarFila[_validarIdx]);
+  const restam=_validarFila.length-_validarIdx;
+  const sign=lc(t.tipo).includes('entrada');
+  let h=`<div style="font:400 11px var(--f);color:var(--tx3);margin-bottom:8px">O agente leu este valor de um documento com confiança BAIXA (foto/visão). Confira contra o documento: <b>o valor está certo?</b> · faltam ${restam}</div>`;
+  h+=`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:var(--r2);padding:12px;margin-bottom:10px">
+    <div style="font:700 20px var(--fm);color:var(${sign?'--green':'--red'});margin-bottom:6px">${sign?'+':'−'}${R(Math.abs(t.valor))}</div>
+    <div style="font-size:12px;color:var(--tx2)">${dfmt(t.dt_transacao)} · ${t.descricao||t.desc_importada||t.favorecido||'—'}</div>
+    <div style="font-size:11px;color:var(--tx3);margin-top:4px">${getIco(t.classe)} ${t.classe} › ${t.categoria} › ${t.subcategoria}</div>
+    <div style="font-size:11px;color:var(--tx3)">${t.conta_origem}${t.cartao?' · 💳 '+t.cartao:''}${t.doc_origem?' · 📄 '+t.doc_origem:''}</div>
+  </div>`;
+  h+=`<div style="display:flex;gap:6px;flex-wrap:wrap">
+    <button class="btn" onclick="validarLancOk('${t.id}')">✓ Valor confere</button>
+    <button class="btn2" onclick="validarLancEditar('${t.id}')">✏️ Corrigir</button>
+    <button class="btn2" onclick="_validarIdx++;renderValidarCard()">⏭ Pular (volta depois)</button>
+  </div>`;
+  el.innerHTML=h;
+}
+
+async function marcarRevisado(id){
+  const t=S.lancamentos.find(x=>x.id===id);
+  if(!t||!S._lancRevCol||!S.gasUrl)return false;
+  const r=await gasPost({action:'update',tab:'Lancamentos',range:S._lancRevCol+t._row,value:'Sim'});
+  if(r&&r.ok){t.revisado='Sim';return true;}
+  return false;
+}
+
+async function validarLancOk(id){
+  toast('loading','gravando…');
+  const ok=await marcarRevisado(id);
+  toast(ok?'ok':'err',ok?'✓ validado':'falha ao gravar — tente de novo');
+  if(ok){_validarIdx++;renderValidarCard();}
+}
+
+function validarLancEditar(id){
+  // abre o detalhe em modo edição; salvar corrige a linha, gera feedback (A2)
+  // e marca REVISADO? (gancho no salvarEditLanc). Ao fechar, a fila continua.
+  closeM('ov-validar');
+  _validarRetomar=true;
+  openLancDetail(id);
+  _lancEditMode=true;renderLancDetail();
+}
+let _validarRetomar=false;
+function retomarValidacao(){
+  if(!_validarRetomar)return;
+  _validarRetomar=false;
+  if(pendentesValidacao().length){renderValidarCard();openM('ov-validar');}
+}
+
+// ═══════════════════════════════════════════
 // A5 — PÁGINA "DO AGENTE" (auditoria rápida)
 // ═══════════════════════════════════════════
 let _agenteDias=7;
@@ -2715,9 +2856,19 @@ function renderAgente(){
   if(pend){
     h+=`<div class="alert-banner" style="cursor:default"><span class="ico">🎓</span><span style="flex:1">${pend} correção(ões) aguardando o agente aprender (fila feedback)</span></div>`;
   }
+  // A15 — validação pendente é acionável (abre a fila); Baixa já validada só informa
+  const naoValidados=txs.filter(t=>lc(t.confianca)==='baixa'&&lc(t.revisado)!=='sim').length;
+  if(naoValidados){
+    h+=`<div class="alert-banner" onclick="_validarJaMostrou=false;checarValidacaoAgente()" style="cursor:pointer"><span class="ico">⚠️</span><span style="flex:1">${naoValidados} valor(es) do agente AGUARDANDO VALIDAÇÃO — clique para validar</span></div>`;
+  }
   const baixas=txs.filter(t=>lc(t.confianca)==='baixa').length;
-  if(baixas){
-    h+=`<div class="alert-banner" style="cursor:default"><span class="ico">⚠️</span><span style="flex:1">${baixas} com confiança BAIXA — vale conferir contra o documento</span></div>`;
+  if(baixas&&!naoValidados){
+    h+=`<div class="alert-banner" style="cursor:default"><span class="ico">✓</span><span style="flex:1">${baixas} com confiança BAIXA — todos já validados por você</span></div>`;
+  }
+  // A14 — alerta de categoria fora do catálogo (regra velha da memoria, etc.)
+  const foraCat=txs.filter(t=>catForaDoCatalogo(t).length).length;
+  if(foraCat){
+    h+=`<div class="alert-banner" style="cursor:default"><span class="ico">🚫</span><span style="flex:1">${foraCat} com classe/categoria fora do catálogo — abra e corrija (a correção ensina o agente)</span></div>`;
   }
 
   txs.forEach(t=>{
