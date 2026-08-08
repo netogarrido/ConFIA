@@ -581,7 +581,10 @@ function compDate(s){const d=parseDate(s);return d?d.substring(0,7):'';}
 // ═══════════════════════════════════════════
 // SHEETS API (leitura)
 // ═══════════════════════════════════════════
+let _syncCompletou=false;
 let _lastReadErrors=[];
+window.addEventListener('error',ev=>{try{_lastReadErrors.push('JS: '+(ev.message||'erro')+' @'+(ev.filename||'').split('/').pop()+':'+(ev.lineno||'?'));}catch(_){}});
+window.addEventListener('unhandledrejection',ev=>{try{_lastReadErrors.push('Promise: '+((ev.reason&&ev.reason.message)||ev.reason||'rejeitada'));}catch(_){}});
 async function sheetRead(tab){
   try{
     const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab)}?key=${API_KEY}`;
@@ -592,7 +595,10 @@ async function sheetRead(tab){
       _lastReadErrors.push(`${tab}: HTTP ${r.status} ${r.statusText}${detalhe?' — '+detalhe:''}`);
       return null;
     }
-    const d=await r.json();return d.values||[];
+    const d=await r.json();
+    const v=d.values||[];
+    if(!v.length)_lastReadErrors.push(`${tab}: HTTP 200 porém 0 linhas retornadas`);
+    return v;
   }catch(e){
     _lastReadErrors.push(`${tab}: ${e.name} — ${e.message}`);
     console.error('read err:',tab,e.message);return null;
@@ -772,6 +778,7 @@ async function syncAll(){
     toast('ok',`✓ ${S.lancamentos.length}lnç · ${S.categorias.length}cat · ${S.orcamentos.length}orc · ${(S.validacoes||[]).length}val · ${(S.regras_op||[]).length}reg`);
     runValidation();
     updatePillMes();
+    _syncCompletou=true;
     renderCurrent();
     checarValidacaoAgente(); // A15 — popup de validação pós-ingestão
   }catch(e){toast('err','erro: '+e.message);console.error(e);}
@@ -2002,7 +2009,8 @@ function renderConfig(){
       &nbsp;&nbsp;origem: ${localStorage.getItem('confia-sheetId')?'<span style="color:var(--amber)">localStorage</span>':'código'}<br>
       API Key em uso: ${String(API_KEY).slice(0,12)}…${String(API_KEY).slice(-4)}<br>
       &nbsp;&nbsp;origem: ${localStorage.getItem('confia-apiKey')?'<span style="color:var(--amber)">localStorage</span>':'código'}<br>
-      ${_lastReadErrors.length?'<span style="color:var(--red)">Erros de leitura ('+_lastReadErrors.length+'):</span><br>'+_lastReadErrors.slice(0,4).map(e=>'&nbsp;&nbsp;'+e).join('<br>'):'<span style="color:var(--green)">Nenhum erro de leitura</span>'}
+      Sync completou: ${_syncCompletou?'<span style="color:var(--green)">sim</span>':'<span style="color:var(--red)">NÃO — abortou no meio</span>'}<br>
+      ${_lastReadErrors.length?'<span style="color:var(--red)">Ocorrências ('+_lastReadErrors.length+'):</span><br>'+_lastReadErrors.slice(0,10).map(e=>'&nbsp;&nbsp;'+e).join('<br>'):'<span style="color:var(--green)">Nenhum erro registrado</span>'}
     </div>
     <button class="btn2 sm" onclick="if(confirm('Limpar sheetId e apiKey salvos neste navegador e recarregar?')){localStorage.removeItem('confia-sheetId');localStorage.removeItem('confia-apiKey');location.reload();}" style="margin-bottom:12px">Resetar conexão salva</button>
     <div style="font:600 10px var(--f);color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Status das Abas</div>
@@ -3103,9 +3111,9 @@ async function validatePin(){
 
 async function startApp(){
   S.gasUrl=localStorage.getItem('confia-gas')||'';
-  renderDashboard();
-  await syncAll();
-  runValidation();
+  try{renderDashboard();}catch(e){_lastReadErrors.push('renderDashboard inicial falhou: '+e.message);console.error(e);}
+  try{await syncAll();}catch(e){_lastReadErrors.push('syncAll falhou: '+e.message);console.error(e);}
+  try{runValidation();}catch(e){_lastReadErrors.push('runValidation falhou: '+e.message);console.error(e);}
 }
 
 // ═══════════════════════════════════════════
