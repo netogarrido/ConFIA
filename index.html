@@ -581,11 +581,22 @@ function compDate(s){const d=parseDate(s);return d?d.substring(0,7):'';}
 // ═══════════════════════════════════════════
 // SHEETS API (leitura)
 // ═══════════════════════════════════════════
+let _lastReadErrors=[];
 async function sheetRead(tab){
   try{
-    const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab)}?key=${API_KEY}`);
-    if(!r.ok)return null;const d=await r.json();return d.values||[];
-  }catch(e){console.error('read err:',tab,e.message);return null;}
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab)}?key=${API_KEY}`;
+    const r=await fetch(url);
+    if(!r.ok){
+      let detalhe='';
+      try{const err=await r.json();detalhe=err.error&&err.error.message?err.error.message:'';}catch(_){}
+      _lastReadErrors.push(`${tab}: HTTP ${r.status} ${r.statusText}${detalhe?' — '+detalhe:''}`);
+      return null;
+    }
+    const d=await r.json();return d.values||[];
+  }catch(e){
+    _lastReadErrors.push(`${tab}: ${e.name} — ${e.message}`);
+    console.error('read err:',tab,e.message);return null;
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -594,6 +605,7 @@ async function sheetRead(tab){
 function toast(st,msg){const el=document.getElementById('syncToast');el.textContent=msg;el.className='sync-toast show '+st;if(st!=='loading')setTimeout(()=>el.classList.remove('show'),3000);}
 
 async function syncAll(){
+  _lastReadErrors=[];
   toast('loading','sincronizando…');
   try{
     // Config
@@ -1984,6 +1996,15 @@ function renderConfig(){
     <div id="cfg-gas-result" style="margin-top:6px"></div>
   </div>`;
   h+=`<div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--bdr)">
+    <div style="font:600 10px var(--f);color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Diagnóstico de Conexão</div>
+    <div style="font-size:10px;color:var(--tx2);line-height:1.8;font-family:var(--fm);word-break:break-all;margin-bottom:10px">
+      Sheet ID em uso: ${SHEET_ID}<br>
+      &nbsp;&nbsp;origem: ${localStorage.getItem('confia-sheetId')?'<span style="color:var(--amber)">localStorage</span>':'código'}<br>
+      API Key em uso: ${String(API_KEY).slice(0,12)}…${String(API_KEY).slice(-4)}<br>
+      &nbsp;&nbsp;origem: ${localStorage.getItem('confia-apiKey')?'<span style="color:var(--amber)">localStorage</span>':'código'}<br>
+      ${_lastReadErrors.length?'<span style="color:var(--red)">Erros de leitura ('+_lastReadErrors.length+'):</span><br>'+_lastReadErrors.slice(0,4).map(e=>'&nbsp;&nbsp;'+e).join('<br>'):'<span style="color:var(--green)">Nenhum erro de leitura</span>'}
+    </div>
+    <button class="btn2 sm" onclick="if(confirm('Limpar sheetId e apiKey salvos neste navegador e recarregar?')){localStorage.removeItem('confia-sheetId');localStorage.removeItem('confia-apiKey');location.reload();}" style="margin-bottom:12px">Resetar conexão salva</button>
     <div style="font:600 10px var(--f);color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Status das Abas</div>
     <div style="font-size:11px;color:var(--tx2);line-height:2">
       Config: ✓ ${Object.keys(S.config).length} parâmetros<br>
