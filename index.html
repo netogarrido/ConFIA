@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>ConFIA · Bibi & Netog v18</title>
+<title>ConFIA · Bibi & Netog v20</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -253,7 +253,7 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;mi
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
 <aside class="sidebar" id="sidebar">
-  <div class="sb-brand">ConF I.A.<small>Bibi &amp; Netog v19</small></div>
+  <div class="sb-brand">ConF I.A.<small id="sbVersion">Bibi &amp; Netog v20</small></div>
   <button class="sb-item on" onclick="go('dashboard')"><span class="sb-ico">📊</span> Dashboard</button>
   <div class="sb-section">Financeiro</div>
   <button class="sb-item" onclick="go('lancamentos')"><span class="sb-ico">📋</span> Lançamentos</button>
@@ -539,6 +539,10 @@ body{font-family:var(--f);background:var(--bg);color:var(--tx);font-size:14px;mi
 
 <script>
 'use strict';
+
+// Fonte única do rótulo de versão: o <title> e o <small> de .sb-brand derivam daqui no boot.
+// Ao subir a versão, atualize esta constante E os literais do HTML (title + sb-brand) juntos.
+const APP_VERSION='v20';
 
 // ═══════════════════════════════════════════
 // ESTADO
@@ -898,7 +902,7 @@ function renderDashboard(){
     const mEnt=mTxs.filter(t=>lc(t.tipo).includes('entrada')).reduce((a,t)=>a+conv(t.valor,t.moeda),0);
     const mSai=mTxs.filter(t=>lc(t.tipo).includes('saída')||lc(t.tipo).includes('saida')).reduce((a,t)=>a+conv(t.valor,t.moeda),0);
     const mOrc=S.orcamentos.filter(o=>o.dt===dt).reduce((a,o)=>a+o.valor,0);
-    meses.push({m,label:_mAbr[m-1],ent:mEnt,sai:mSai,orc:mOrc});
+    meses.push({m,label:_MESES_ABREV[m-1],ent:mEnt,sai:mSai,orc:mOrc});
   }
   const maxVal=Math.max(...meses.map(m=>Math.max(m.ent,m.sai,m.orc)),1);
   const cw=100/12;
@@ -2103,11 +2107,11 @@ async function sheetAppend(tab,rows){
 
 // Mapeamento de nomes de campos entre aba e objeto JS
 const FIELD_MAP={
-  Categorias:{subcategoria:'subcategoria',classe:'classe',categoria:'categoria',tipo:'tipo',atual:'atual',icone_classe:'icone_classe',recorrencia_esperada:'recorrencia'},
-  Contas:{id_conta:'id',nome_conta:'nome',tipo_conta:'tipo',moeda:'moeda',atual:'atual'},
-  Ativos:{id_ativo:'id',nome_ativo:'nome',conta_relacionada:'conta',categoria_patrimonial:'catPat',atual:'atual',moeda_transacao:'moeda'},
-  Orcamentos:{subcategoria:'subcategoria',classe:'classe',categoria:'categoria',orc_valor:'valor',tipo:'tipo'},
-  Lancamentos:{id:'id',subcategoria:'subcategoria',classe:'classe',conta_origem:'conta_origem',conta_destino:'conta_destino',cartao:'cartao',nome_ativo:'nome_ativo',tipo_fluxo:'tipo',status:'status',dt_transacao:'dt_transacao',dt_competencia:'dt_competencia',dt_liquidacao:'dt_liquidacao',valor:'valor',moeda_transacao:'moeda',forma_transacao:'forma',qtd_parcelas:'parcelas',num_parcela:'num_parcela',fatura_ref:'fatura_ref'},
+  Categorias:{subcategoria:'subcategoria',classe:'classe',categoria:'categoria',tipo:'tipo',atual:'atual',icone_classe:'icone_classe',recorrencia_esperada:'recorrencia',icone_categoria:'icone_categoria',quando_usar:'quando_usar',participa_orcamento:'participaOrc',provisionar_automaticamente:'provisionar'},
+  Contas:{id_conta:'id',nome_conta:'nome',tipo_conta:'tipo',moeda:'moeda',atual:'atual',apelido_para_importacao:'apelido'},
+  Ativos:{id_ativo:'id',nome_ativo:'nome',conta_relacionada:'conta',categoria_patrimonial:'catPat',atual:'atual',moeda_transacao:'moeda',tipo_ativo:'tipo',eh_passivo:'ehPassivo'},
+  Orcamentos:{subcategoria:'subcategoria',classe:'classe',categoria:'categoria',orc_valor:'valor',tipo:'tipo',dt_competencia:'dt'},
+  Lancamentos:{id:'id',subcategoria:'subcategoria',classe:'classe',conta_origem:'conta_origem',conta_destino:'conta_destino',cartao:'cartao',nome_ativo:'nome_ativo',tipo_fluxo:'tipo',status:'status',dt_transacao:'dt_transacao',dt_competencia:'dt_competencia',dt_liquidacao:'dt_liquidacao',valor:'valor',moeda_transacao:'moeda',forma_transacao:'forma',qtd_parcelas:'parcelas',num_parcela:'num_parcela',fatura_ref:'fatura_ref',id_grupo:'id_grupo',categoria:'categoria',valor_total:'valor_total',descricao:'descricao',descricao_importada:'desc_importada',favorecido:'favorecido',reembolsavel:'reembolsavel',tipo_reembolso:'tipo_reembolso',status_reembolso:'status_reembolso',fechado:'fechado',confianca:'confianca',doc_origem:'doc_origem'},
   classificador:{subcategoria:'subcategoria',classe:'classe'}
 };
 
@@ -2124,6 +2128,15 @@ function getVal(obj,aba,campo){
   return obj[resolveField(aba,campo)];
 }
 
+// Comparação valor-do-dado × literal-do-contrato, insensível a caixa.
+// Necessário porque o parser de Lancamentos guarda tipo/forma/status em
+// MINÚSCULAS (r[5]/r[10]/r[26] com .toLowerCase()) enquanto o contrato
+// (validacoes/dicionario) escreve em Title Case ("Saídas", "Liquidado",
+// "Cartão de crédito"). Sem normalizar, toda comparação falha: gera alerta
+// falso em valor_valido (V031/V032/V036) e emudece toda regra cuja CONDIÇÃO
+// depende desses campos (V056 e outras). Req 12.1.
+function _normCmp(v){return String(v==null?'':v).trim().toLowerCase();}
+
 function matchCondition(obj,aba,cond){
   if(!cond)return true;
   const parts=cond.split(' e ');
@@ -2132,11 +2145,11 @@ function matchCondition(obj,aba,cond){
     if(part.includes(' não vazio')){const c=part.replace(' não vazio','').trim();return!!getVal(obj,aba,c);}
     if(part.includes(' vazio')){const c=part.replace(' vazio','').trim();return!getVal(obj,aba,c);}
     if(part.includes(' contém ')){const[c,vals]=part.split(' contém ');const vs=vals.split(';').map(s=>s.trim());return vs.some(v=>String(getVal(obj,aba,c.trim())||'').toLowerCase().includes(v.toLowerCase()));}
-    if(part.includes(' em ')){const[c,vals]=part.split(' em ');const vs=vals.split(';').map(s=>s.trim());return vs.includes(String(getVal(obj,aba,c.trim())));}
+    if(part.includes(' em ')){const[c,vals]=part.split(' em ');const vs=vals.split(';').map(s=>_normCmp(s));return vs.includes(_normCmp(getVal(obj,aba,c.trim())));}
     if(part.includes('>=')){const[c,val]=part.split('>=');return parseFloat(getVal(obj,aba,c.trim()))||0>=parseFloat(val);}
     if(part.includes('>')){const[c,val]=part.split('>');return(parseFloat(getVal(obj,aba,c.trim()))||0)>parseFloat(val);}
     if(part.includes('<=')){const[c,val]=part.split('<=');return(parseFloat(getVal(obj,aba,c.trim()))||0)<=parseFloat(val);}
-    if(part.includes('=')){const[c,val]=part.split('=');return String(getVal(obj,aba,c.trim()))===val.trim();}
+    if(part.includes('=')){const[c,val]=part.split('=');return _normCmp(getVal(obj,aba,c.trim()))===_normCmp(val);}
     return true;
   });
 }
@@ -2167,8 +2180,8 @@ function executeCheck(v){
         return!d[srcField];
       });
     case 'valor_valido':{
-      const validos=v.condicao.split(';').map(s=>s.trim());
-      return dados.filter(d=>{const val=d[srcField];if(!val)return false;return!validos.includes(val);});
+      const validos=v.condicao.split(';').map(s=>_normCmp(s));
+      return dados.filter(d=>{const val=d[srcField];if(!val)return false;return!validos.includes(_normCmp(val));});
     }
     case 'logica':
       return dados.filter(d=>matchCondition(d,v.aba_origem,v.condicao));
