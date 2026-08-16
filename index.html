@@ -3133,6 +3133,11 @@ async function startApp(){
 // INIT — PIN a cada sessão
 // ═══════════════════════════════════════════
 (()=>{
+  // Rótulo de versão derivado de APP_VERSION (fonte única)
+  document.title='ConFIA · Bibi & Netog '+APP_VERSION;
+  const _sbv=document.getElementById('sbVersion');
+  if(_sbv)_sbv.textContent='Bibi & Netog '+APP_VERSION;
+
   // sessionStorage = morre ao fechar browser/aba
   if(sessionStorage.getItem('confia-auth')==='ok'){
     document.getElementById('pinScreen').classList.add('hidden');
